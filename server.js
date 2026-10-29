@@ -53,12 +53,16 @@ if (dbUrl) {
 
 const pool = mysql.createPool(poolConfig);
 
-// Automatic database schema initializer on boot (Ensures zero-downtime deployment)
+// Comprehensive, bulletproof database schema initializer on boot
 async function initDatabase() {
+  let conn;
   try {
-    const conn = await pool.getConnection();
+    conn = await pool.getConnection();
+    console.log('  🔍 Verifying complete database schema & columns...');
 
-    // 1. Users table
+    // ────────────────────────────────────────────────────────
+    // 1. Users Table Audit & Self-Healing
+    // ────────────────────────────────────────────────────────
     await conn.query(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -70,28 +74,34 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // Self-healing migration for existing legacy users table
-    try {
-      const [userCols] = await conn.query('SHOW COLUMNS FROM users');
-      const userColNames = userCols.map(c => c.Field.toLowerCase());
+    const [userCols] = await conn.query('SHOW COLUMNS FROM users');
+    const uCols = new Set(userCols.map(c => c.Field.toLowerCase()));
 
-      if (!userColNames.includes('username')) {
-        console.log('  ⚠️ Adding missing `username` column to users table...');
-        await conn.query('ALTER TABLE users ADD COLUMN username VARCHAR(100) NULL AFTER id');
-        await conn.query('UPDATE users SET username = SUBSTRING_INDEX(email, "@", 1) WHERE username IS NULL OR username = ""');
-      }
-      if (!userColNames.includes('role')) {
-        console.log('  ⚠️ Adding missing `role` column to users table...');
-        await conn.query("ALTER TABLE users ADD COLUMN role ENUM('admin','analyst') NOT NULL DEFAULT 'analyst'");
-      }
-      if (!userColNames.includes('created_at')) {
-        await conn.query('ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
-      }
-    } catch (colErr) {
-      console.warn('  ⚠️ User column verification note:', colErr.message);
+    if (!uCols.has('username')) {
+      console.log('  ⚠️ Adding missing `username` column to users table...');
+      await conn.query('ALTER TABLE users ADD COLUMN username VARCHAR(100) NULL AFTER id');
+      await conn.query('UPDATE users SET username = SUBSTRING_INDEX(email, "@", 1) WHERE username IS NULL OR username = ""');
+    }
+    if (!uCols.has('email')) {
+      console.log('  ⚠️ Adding missing `email` column to users table...');
+      await conn.query('ALTER TABLE users ADD COLUMN email VARCHAR(150) NULL AFTER username');
+    }
+    if (!uCols.has('password')) {
+      console.log('  ⚠️ Adding missing `password` column to users table...');
+      await conn.query('ALTER TABLE users ADD COLUMN password VARCHAR(255) NULL AFTER email');
+    }
+    if (!uCols.has('role')) {
+      console.log('  ⚠️ Adding missing `role` column to users table...');
+      await conn.query("ALTER TABLE users ADD COLUMN role ENUM('admin','analyst') NOT NULL DEFAULT 'analyst'");
+    }
+    if (!uCols.has('created_at')) {
+      console.log('  ⚠️ Adding missing `created_at` column to users table...');
+      await conn.query('ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
     }
 
-    // 2. Datasets table (Isolated per user)
+    // ────────────────────────────────────────────────────────
+    // 2. Datasets Table Audit & Self-Healing
+    // ────────────────────────────────────────────────────────
     await conn.query(`
       CREATE TABLE IF NOT EXISTS datasets (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -107,7 +117,20 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // 3. Dataset rows table
+    const [dsCols] = await conn.query('SHOW COLUMNS FROM datasets');
+    const dCols = new Set(dsCols.map(c => c.Field.toLowerCase()));
+
+    if (!dCols.has('user_id')) await conn.query('ALTER TABLE datasets ADD COLUMN user_id INT NOT NULL DEFAULT 1');
+    if (!dCols.has('file_name')) await conn.query("ALTER TABLE datasets ADD COLUMN file_name VARCHAR(255) NOT NULL DEFAULT 'data.csv'");
+    if (!dCols.has('file_type')) await conn.query("ALTER TABLE datasets ADD COLUMN file_type VARCHAR(50) NOT NULL DEFAULT 'csv'");
+    if (!dCols.has('row_count')) await conn.query('ALTER TABLE datasets ADD COLUMN row_count INT NOT NULL DEFAULT 0');
+    if (!dCols.has('column_mapping')) await conn.query('ALTER TABLE datasets ADD COLUMN column_mapping JSON NULL');
+    if (!dCols.has('is_active')) await conn.query('ALTER TABLE datasets ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1');
+    if (!dCols.has('uploaded_at')) await conn.query('ALTER TABLE datasets ADD COLUMN uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+
+    // ────────────────────────────────────────────────────────
+    // 3. Dataset Rows Table Audit & Self-Healing
+    // ────────────────────────────────────────────────────────
     await conn.query(`
       CREATE TABLE IF NOT EXISTS dataset_rows (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -131,9 +154,30 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // Seed or ensure default admin account exists
-    const [adminRows] = await conn.query('SELECT id FROM users WHERE email = ?', ['admin@ecomanalytics.io']);
+    const [rowCols] = await conn.query('SHOW COLUMNS FROM dataset_rows');
+    const rCols = new Set(rowCols.map(c => c.Field.toLowerCase()));
+
+    if (!rCols.has('dataset_id')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN dataset_id INT NOT NULL DEFAULT 1');
+    if (!rCols.has('user_id')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN user_id INT NOT NULL DEFAULT 1');
+    if (!rCols.has('row_number')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN `row_number` INT NOT NULL DEFAULT 1');
+    if (!rCols.has('raw_data')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN raw_data JSON NULL');
+    if (!rCols.has('customer_id')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN customer_id VARCHAR(255) NULL');
+    if (!rCols.has('customer_name')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN customer_name VARCHAR(255) NULL');
+    if (!rCols.has('product')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN product VARCHAR(255) NULL');
+    if (!rCols.has('category')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN category VARCHAR(255) NULL');
+    if (!rCols.has('price')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN price DECIMAL(12,2) NULL');
+    if (!rCols.has('quantity')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN quantity INT NULL');
+    if (!rCols.has('order_date')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN order_date DATE NULL');
+    if (!rCols.has('discount')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN discount DECIMAL(12,2) NULL');
+    if (!rCols.has('location')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN location VARCHAR(255) NULL');
+    if (!rCols.has('payment_type')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN payment_type VARCHAR(100) NULL');
+    if (!rCols.has('status')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN status VARCHAR(100) NULL');
+
+    // ────────────────────────────────────────────────────────
+    // 4. Guaranteed Demo Admin Provisioning & Password Sync
+    // ────────────────────────────────────────────────────────
     const adminHash = await bcrypt.hash('Admin@123', 10);
+    const [adminRows] = await conn.query('SELECT id FROM users WHERE email = ?', ['admin@ecomanalytics.io']);
     if (adminRows.length === 0) {
       await conn.query(
         'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
@@ -142,27 +186,22 @@ async function initDatabase() {
       console.log('  👑 Initial admin account created: admin@ecomanalytics.io / Admin@123');
     } else {
       await conn.query(
-        'UPDATE users SET password = ?, username = COALESCE(username, "admin") WHERE email = ?',
+        'UPDATE users SET password = ?, username = COALESCE(NULLIF(username, ""), "admin"), role = "admin" WHERE email = ?',
         [adminHash, 'admin@ecomanalytics.io']
       );
+      console.log('  👑 Admin account credentials verified: admin@ecomanalytics.io / Admin@123');
     }
 
-    conn.release();
-    console.log('  ✅ Database schema verified & ready for cloud deployment.');
+    // Ensure no user has an empty password
+    await conn.query('UPDATE users SET password = ? WHERE password IS NULL OR password = ""', [adminHash]);
+
+    console.log('  ✅ Database schema fully synced & verified across all tables and columns.');
   } catch (err) {
     console.error('  ⚠️ Database initialization warning:', err.message);
+  } finally {
+    if (conn) conn.release();
   }
 }
-
-pool.getConnection()
-  .then(conn => {
-    console.log('  ✅ MySQL / TiDB connected successfully.');
-    conn.release();
-    initDatabase();
-  })
-  .catch(err => {
-    console.error('  ❌ Database connection FAILED:', err.message);
-  });
 
 // ──────────────────────────────────────────────────────────
 // Multer in-memory storage (max 10 MB)
@@ -1220,11 +1259,21 @@ app.use((err, _req, res, _next) => {
 });
 
 // ──────────────────────────────────────────────────────────
-// Start Server
+// Start Server (Waits for database schema sync before listening)
 // ──────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log('\n===========================================');
-  console.log('  E-Commerce Analytics Server (v2)');
-  console.log(`  URL: http://localhost:${PORT}`);
-  console.log('===========================================\n');
-});
+async function startServer() {
+  try {
+    await initDatabase();
+  } catch (err) {
+    console.error('Initial DB sync note:', err.message);
+  }
+
+  app.listen(PORT, () => {
+    console.log('\n===========================================');
+    console.log('  E-Commerce Analytics Server (v2)');
+    console.log(`  URL: http://localhost:${PORT}`);
+    console.log('===========================================\n');
+  });
+}
+
+startServer();
