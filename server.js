@@ -62,13 +62,34 @@ async function initDatabase() {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(100) NOT NULL UNIQUE,
+        username VARCHAR(100) NOT NULL,
         email VARCHAR(150) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
         role ENUM('admin','analyst') NOT NULL DEFAULT 'analyst',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // Self-healing migration for existing legacy users table
+    try {
+      const [userCols] = await conn.query('SHOW COLUMNS FROM users');
+      const userColNames = userCols.map(c => c.Field.toLowerCase());
+
+      if (!userColNames.includes('username')) {
+        console.log('  ⚠️ Adding missing `username` column to users table...');
+        await conn.query('ALTER TABLE users ADD COLUMN username VARCHAR(100) NULL AFTER id');
+        await conn.query('UPDATE users SET username = SUBSTRING_INDEX(email, "@", 1) WHERE username IS NULL OR username = ""');
+      }
+      if (!userColNames.includes('role')) {
+        console.log('  ⚠️ Adding missing `role` column to users table...');
+        await conn.query("ALTER TABLE users ADD COLUMN role ENUM('admin','analyst') NOT NULL DEFAULT 'analyst'");
+      }
+      if (!userColNames.includes('created_at')) {
+        await conn.query('ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+      }
+    } catch (colErr) {
+      console.warn('  ⚠️ User column verification note:', colErr.message);
+    }
 
     // 2. Datasets table (Isolated per user)
     await conn.query(`
@@ -81,7 +102,6 @@ async function initDatabase() {
         column_mapping JSON,
         is_active TINYINT(1) NOT NULL DEFAULT 1,
         uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         INDEX idx_user_id (user_id),
         INDEX idx_user_active (user_id, is_active)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -106,22 +126,25 @@ async function initDatabase() {
         location VARCHAR(255) NULL,
         payment_type VARCHAR(100) NULL,
         status VARCHAR(100) NULL,
-        FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         INDEX idx_dataset_id (dataset_id),
         INDEX idx_user_dataset (user_id, dataset_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // Seed default admin account if users table is empty
-    const [userCount] = await conn.query('SELECT COUNT(*) as count FROM users');
-    if (userCount[0].count === 0) {
-      const adminHash = await bcrypt.hash('Admin@123', 10);
+    // Seed or ensure default admin account exists
+    const [adminRows] = await conn.query('SELECT id FROM users WHERE email = ?', ['admin@ecomanalytics.io']);
+    const adminHash = await bcrypt.hash('Admin@123', 10);
+    if (adminRows.length === 0) {
       await conn.query(
         'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
         ['admin', 'admin@ecomanalytics.io', adminHash, 'admin']
       );
       console.log('  👑 Initial admin account created: admin@ecomanalytics.io / Admin@123');
+    } else {
+      await conn.query(
+        'UPDATE users SET password = ?, username = COALESCE(username, "admin") WHERE email = ?',
+        [adminHash, 'admin@ecomanalytics.io']
+      );
     }
 
     conn.release();
@@ -405,9 +428,9 @@ app.post('/api/auth/login', async (req, res, next) => {
 
     const user = {
       id: userRow.id,
-      username: userRow.username,
+      username: userRow.username || userRow.email.split('@')[0],
       email: userRow.email,
-      role: userRow.role,
+      role: userRow.role || 'analyst',
     };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '7d' });
 
