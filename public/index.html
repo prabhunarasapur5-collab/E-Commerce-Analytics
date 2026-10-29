@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>E-Commerce Sales & Customer Analytics System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
+              400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
+              800: '#3730a3', 900: '#312e81', 950: '#1e1b4b',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    :root {
+      --bg-main: #090d16;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --nav-active: rgba(99, 102, 241, 0.15);
+      --input-bg: rgba(15, 23, 42, 0.6);
+      --hover-bg: rgba(255, 255, 255, 0.05);
+    }
+
+    html.light {
+      --bg-main: #f8fafc;
+      --card-bg: rgba(255, 255, 255, 0.9);
+      --card-border: rgba(0, 0, 0, 0.08);
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --nav-active: rgba(99, 102, 241, 0.1);
+      --input-bg: #ffffff;
+      --hover-bg: rgba(0, 0, 0, 0.04);
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    .glass {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+    }
+
+    .grad-text {
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.2);
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.4);
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: all 0.15s ease;
+    }
+    .nav-btn:hover {
+      background: var(--hover-bg);
+      color: var(--text-primary);
+    }
+    .nav-btn.active {
+      background: var(--nav-active);
+      color: #6366f1;
+      border-left: 3px solid #6366f1;
+    }
+
+    .badge-seg {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.625rem;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .seg-High-Value { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+    .seg-Frequent { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .seg-Occasional { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .seg-Inactive { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .spinner {
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="dark overflow-x-hidden">
+
+  <!-- ============================================================ -->
+  <!-- 1. AUTH SCREEN (Shown ONLY when unauthenticated)             -->
+  <!-- ============================================================ -->
+  <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xl">
+    <div class="glass w-full max-w-md rounded-3xl p-8 shadow-2xl relative border border-slate-700/50">
+      
+      <!-- Logo Header -->
+      <div class="text-center mb-8">
+        <div class="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center text-2xl mb-3 shadow-lg shadow-brand-500/20"
+             style="background: linear-gradient(135deg, #6366f1, #a855f7);">
+          ⚡
+        </div>
+        <h1 class="text-2xl font-extrabold tracking-tight grad-text">EcomAnalytics</h1>
+        <p class="text-xs text-slate-400 mt-1">E-Commerce Sales & Customer Intelligence</p>
+      </div>
+
+      <!-- Auth Tabs -->
+      <div class="flex border-b border-slate-700/60 mb-6 text-sm font-semibold">
+        <button id="tab-login" class="flex-1 pb-3 border-b-2 border-brand-500 text-brand-400 transition-colors" onclick="switchAuthTab('login')">
+          Sign In
+        </button>
+        <button id="tab-signup" class="flex-1 pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-colors" onclick="switchAuthTab('signup')">
+          Create Account
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
+          <input id="login-email" type="email" required placeholder="admin@ecomanalytics.io"
+                 class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
+          <input id="login-password" type="password" required placeholder="••••••••"
+                 class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
+        </div>
+        <button id="btn-login-submit" type="submit"
+                class="w-full py-3 rounded-xl font-bold text-white text-sm tracking-wide shadow-lg shadow-brand-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
+          Sign In to Dashboard
+        </button>
+      </form>
+
+      <!-- Signup Form -->
+      <form id="form-signup" onsubmit="handleSignup(event)" class="space-y-4 hidden">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Username</label>
+          <input id="signup-username" type="text" required placeholder="analyst_user" minlength="3"
+                 class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
+          <input id="signup-email" type="email" required placeholder="user@company.com"
+                 class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password (Min. 6 chars)</label>
+          <input id="signup-password" type="password" required placeholder="••••••••" minlength="6"
+                 class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
+        </div>
+        <button id="btn-signup-submit" type="submit"
+                class="w-full py-3 rounded-xl font-bold text-white text-sm tracking-wide shadow-lg shadow-brand-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                style="background: linear-gradient(135deg, #7c3aed, #4f46e5)">
+          Create Account
+        </button>
+      </form>
+
+      <!-- Auth Error Toast -->
+      <div id="auth-error-box" class="hidden mt-4 p-3 rounded-xl bg-red-950/60 border border-red-800 text-red-300 text-xs text-center font-medium"></div>
+
+      <!-- Quick Demo Info -->
+      <div class="mt-6 pt-4 border-t border-slate-800 text-center">
+        <p class="text-xs text-slate-500">
+          Admin Demo Account: <span class="text-slate-300 font-mono">admin@ecomanalytics.io</span> / <span class="text-slate-300 font-mono">Admin@123</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 2. MAIN APPLICATION (Shown only when authenticated)           -->
+  <!-- ============================================================ -->
+  <div id="app-root" class="hidden min-h-screen flex flex-col">
+
+    <!-- Mobile Header Bar -->
+    <header class="md:hidden glass border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+      <div class="flex items-center gap-2">
+        <button onclick="toggleMobileSidebar()" class="p-2 rounded-lg bg-slate-800/60 text-slate-300">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <span class="font-bold text-base grad-text">EcomAnalytics</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="openUploadModal()" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-brand-600 flex items-center gap-1">
+          <span>📤</span> Upload
+        </button>
+        <button onclick="handleLogout()" class="p-2 rounded-lg text-slate-400 hover:text-red-400">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="flex flex-1">
+      
+      <!-- ============================================================ -->
+      <!-- LEFT SIDEBAR (Exactly 3 Sections)                           -->
+      <!-- ============================================================ -->
+      <aside id="sidebar" class="w-64 glass border-r border-slate-800/80 flex flex-col fixed md:sticky top-0 h-screen z-40 transition-transform -translate-x-full md:translate-x-0">
+        
+        <!-- Brand Header -->
+        <div class="p-6 border-b border-slate-800/60 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-md shadow-brand-500/20"
+               style="background: linear-gradient(135deg, #6366f1, #a855f7);">
+            ⚡
+          </div>
+          <div>
+            <h2 class="font-bold text-base leading-tight grad-text">EcomAnalytics</h2>
+            <p class="text-[11px] text-slate-500 font-medium">Dataset Intelligence</p>
+          </div>
+        </div>
+
+        <!-- EXACTLY THREE SECTIONS IN SIDEBAR -->
+        <nav class="flex-1 p-4 space-y-1.5">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 mb-2">Analytics Modules</p>
+          
+          <button id="nav-summary" class="nav-btn active" onclick="switchSection('summary')">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.2l5.7-5.7 4.3 4.3 8-8M21 7v6m0-6h-6"/></svg>
+            <span>Executive Summary</span>
+          </button>
+
+          <button id="nav-customers" class="nav-btn" onclick="switchSection('customers')">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            <span>Customer Segments</span>
+          </button>
+
+          <button id="nav-explorer" class="nav-btn" onclick="switchSection('explorer')">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7zm0 5h16M9 4v16"/></svg>
+            <span>Data Explorer</span>
+          </button>
+        </nav>
+
+        <!-- User Profile Card -->
+        <div class="p-4 border-t border-slate-800/80">
+          <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-900/40 border border-slate-800">
+            <div id="user-avatar" class="w-8 h-8 rounded-lg bg-brand-600/30 text-brand-300 font-bold flex items-center justify-center text-sm border border-brand-500/30">
+              U
+            </div>
+            <div class="flex-1 min-w-0">
+              <p id="user-display-name" class="text-xs font-semibold truncate text-slate-200">User</p>
+              <p id="user-display-role" class="text-[10px] text-slate-500 capitalize">Analyst</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Sidebar Backdrop on Mobile -->
+      <div id="sidebar-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-950/60 z-30 hidden md:hidden"></div>
+
+      <!-- ============================================================ -->
+      <!-- MAIN VIEW AREA                                               -->
+      <!-- ============================================================ -->
+      <div class="flex-1 flex flex-col min-w-0">
+
+        <!-- Header Bar -->
+        <header class="glass border-b border-slate-800/80 px-6 py-3.5 sticky top-0 z-20 flex items-center justify-between gap-4">
+          
+          <!-- Active Title & Breadcrumb -->
+          <div>
+            <h2 id="header-section-title" class="text-base font-bold text-slate-100 flex items-center gap-2">
+              Executive Summary
+            </h2>
+            <p id="header-section-subtitle" class="text-xs text-slate-500">Real-time performance from your active dataset</p>
+          </div>
+
+          <!-- Actions Bar in Header -->
+          <div class="flex items-center gap-3">
+            
+            <!-- Uploaded Files Dropdown Selector -->
+            <div class="relative">
+              <button id="btn-datasets-menu" onclick="toggleDatasetsDropdown()"
+                      class="px-3 py-1.5 rounded-xl text-xs font-semibold glass border border-slate-700/60 hover:border-slate-500 text-slate-200 flex items-center gap-2 transition-colors">
+                <span class="text-brand-400">📁</span>
+                <span id="active-file-label" class="max-w-[140px] truncate">No Dataset</span>
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+
+              <!-- Dropdown Menu -->
+              <div id="datasets-dropdown" class="hidden absolute right-0 mt-2 w-72 glass rounded-2xl shadow-2xl p-2 border border-slate-700/70 z-50 text-xs">
+                <div class="px-3 py-2 font-bold text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800 flex justify-between items-center">
+                  <span>Uploaded Datasets</span>
+                  <span id="dataset-total-count" class="text-slate-500 font-mono">0</span>
+                </div>
+                <div id="datasets-list" class="max-h-60 overflow-y-auto custom-scroll py-1 space-y-1">
+                  <!-- Populated via JS -->
+                </div>
+                <div class="pt-2 border-t border-slate-800">
+                  <button onclick="openUploadModal(); toggleDatasetsDropdown();" class="w-full py-1.5 rounded-lg text-center font-bold text-brand-400 hover:bg-brand-500/10 transition-colors flex items-center justify-center gap-1.5">
+                    <span>➕</span> Upload New File
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upload Data Button in Header -->
+            <button onclick="openUploadModal()"
+                    class="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-md shadow-brand-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
+                    style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
+              <span>📤</span>
+              <span>Upload Data</span>
+            </button>
+
+            <!-- Dark / Light Theme Toggle -->
+            <button onclick="toggleTheme()" title="Toggle Dark/Light Mode"
+                    class="p-2 rounded-xl glass border border-slate-700/60 text-slate-400 hover:text-white transition-colors">
+              <span id="theme-icon">🌙</span>
+            </button>
+
+            <!-- Logout Button in Header -->
+            <button onclick="handleLogout()" title="Logout"
+                    class="p-2 rounded-xl glass border border-slate-700/60 text-slate-400 hover:text-red-400 hover:border-red-800/40 transition-colors">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <!-- Active Dataset Info Banner (Shown at top of every section) -->
+        <div id="active-dataset-banner" class="hidden px-6 py-2.5 bg-slate-900/40 border-b border-slate-800/60 text-xs flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-slate-400">Active Dataset:</span>
+            <span id="banner-file-name" class="font-bold text-white font-mono"></span>
+            <span class="text-slate-500">•</span>
+            <span id="banner-row-count" class="text-slate-400 font-mono"></span>
+            <span class="text-slate-500">•</span>
+            <span id="banner-upload-time" class="text-slate-400"></span>
+          </div>
+          <button onclick="openUploadModal()" class="text-[11px] text-brand-400 hover:underline">
+            Replace with new upload →
+          </button>
+        </div>
+
+        <!-- Content Area -->
+        <main class="flex-1 p-6 relative">
+
+          <!-- Global Loading Indicator -->
+          <div id="global-loading" class="hidden absolute inset-0 bg-slate-950/40 backdrop-blur-sm z-30 flex items-center justify-center">
+            <div class="glass p-6 rounded-2xl flex items-center gap-3 border border-slate-700">
+              <div class="spinner w-5 h-5"></div>
+              <span class="text-xs font-semibold text-slate-200">Loading dataset analytics…</span>
+            </div>
+          </div>
+
+          <!-- ============================================================ -->
+          <!-- SECTION 1: EXECUTIVE SUMMARY                                 -->
+          <!-- ============================================================ -->
+          <section id="sec-summary" class="space-y-6">
+            
+            <!-- Clean Empty State (When no dataset active) -->
+            <div id="empty-state-summary" class="glass rounded-3xl p-16 text-center flex flex-col items-center justify-center border border-slate-800">
+              <div class="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-4 bg-brand-500/10 border border-brand-500/20">
+                📊
+              </div>
+              <h3 class="text-xl font-bold text-white mb-2">No data yet. Upload a CSV or JSON file to get started</h3>
+              <p class="text-xs text-slate-400 max-w-md mb-6 leading-relaxed">
+                Upload your transaction records to immediately view live KPI numbers, revenue trends, category shares, and location breakdowns.
+              </p>
+              <button onclick="openUploadModal()" class="px-6 py-2.5 rounded-xl font-bold text-xs text-white shadow-lg shadow-brand-500/25 hover:scale-105 transition-all" style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
+                Upload File
+              </button>
+            </div>
+
+            <!-- Content Container -->
+            <div id="content-summary" class="space-y-6 hidden">
+              <!-- KPI Cards Grid -->
+              <div id="summary-kpis" class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                <!-- Dynamically populated only if fields exist -->
+              </div>
+
+              <!-- Column guidance alert if needed -->
+              <div id="summary-column-notes" class="hidden p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2">
+                <span>💡</span>
+                <span id="summary-column-notes-text"></span>
+              </div>
+
+              <!-- Charts Grid -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Monthly Trend -->
+                <div id="card-chart-monthly" class="glass rounded-2xl p-5 border border-slate-800">
+                  <div class="flex items-center justify-between mb-4">
+                    <h4 class="font-bold text-sm text-slate-100">Monthly Revenue & Orders Trend</h4>
+                    <span class="text-[10px] text-slate-500 font-mono">Date Series</span>
+                  </div>
+                  <div class="h-64 relative">
+                    <canvas id="chart-monthly"></canvas>
+                  </div>
+                </div>
+
+                <!-- Category Performance -->
+                <div id="card-chart-category" class="glass rounded-2xl p-5 border border-slate-800">
+                  <div class="flex items-center justify-between mb-4">
+                    <h4 class="font-bold text-sm text-slate-100">Category Share</h4>
+                    <span class="text-[10px] text-slate-500 font-mono">Top Categories</span>
+                  </div>
+                  <div class="h-64 relative">
+                    <canvas id="chart-category"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Second Charts Grid -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Location Chart -->
+                <div id="card-chart-location" class="glass rounded-2xl p-5 border border-slate-800">
+                  <div class="flex items-center justify-between mb-4">
+                    <h4 class="font-bold text-sm text-slate-100">Geographic Distribution</h4>
+                    <span class="text-[10px] text-slate-500 font-mono">By Location</span>
+                  </div>
+                  <div class="h-64 relative">
+                    <canvas id="chart-location"></canvas>
+                  </div>
+                </div>
+
+                <!-- Payment Breakdown Chart -->
+                <div id="card-chart-payment" class="glass rounded-2xl p-5 border border-slate-800">
+                  <div class="flex items-center justify-between mb-4">
+                    <h4 class="font-bold text-sm text-slate-100">Payment Methods</h4>
+                    <span class="text-[10px] text-slate-500 font-mono">By Payment Type</span>
+                  </div>
+                  <div class="h-64 relative">
+                    <canvas id="chart-payment"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Top Products Table (Only if product column exists) -->
+              <div id="card-top-products" class="glass rounded-2xl p-5 border border-slate-800">
+                <h4 class="font-bold text-sm text-slate-100 mb-3">Top Products by Revenue</h4>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left text-xs">
+                    <thead>
+                      <tr class="border-b border-slate-800 text-slate-400">
+                        <th class="py-2.5 px-3">#</th>
+                        <th class="py-2.5 px-3">Product Name</th>
+                        <th class="py-2.5 px-3">Category</th>
+                        <th class="py-2.5 px-3 text-right">Orders</th>
+                        <th class="py-2.5 px-3 text-right">Revenue (₹)</th>
+                      </tr>
+                    </thead>
+                    <tbody id="top-products-tbody" class="divide-y divide-slate-800/60"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================================================ -->
+          <!-- SECTION 2: CUSTOMER SEGMENTS                                 -->
+          <!-- ============================================================ -->
+          <section id="sec-customers" class="space-y-6 hidden">
+            
+            <!-- Clean Empty State (When no dataset active) -->
+            <div id="empty-state-customers" class="glass rounded-3xl p-16 text-center flex flex-col items-center justify-center border border-slate-800">
+              <div class="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-4 bg-purple-500/10 border border-purple-500/20">
+                👥
+              </div>
+              <h3 class="text-xl font-bold text-white mb-2">No data yet. Upload a CSV or JSON file to get started</h3>
+              <p class="text-xs text-slate-400 max-w-md mb-6 leading-relaxed">
+                Customer segments and lifetime metrics will be calculated automatically using the customer values from your uploaded file.
+              </p>
+              <button onclick="openUploadModal()" class="px-6 py-2.5 rounded-xl font-bold text-xs text-white shadow-lg shadow-brand-500/25 hover:scale-105 transition-all" style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
+                Upload File
+              </button>
+            </div>
+
+            <!-- Content Container -->
+            <div id="content-customers" class="space-y-6 hidden">
+              
+              <!-- If file has no customer column -->
+              <div id="no-customer-col-alert" class="hidden glass rounded-2xl p-8 text-center border border-amber-500/30">
+                <div class="text-3xl mb-2">⚠️</div>
+                <h4 class="font-bold text-sm text-white mb-1">No Customer Column Detected</h4>
+                <p id="no-customer-col-msg" class="text-xs text-slate-400 max-w-md mx-auto mb-4">
+                  Customer segmentation needs customer data. Please upload a file containing a Customer ID or Customer Name column.
+                </p>
+                <button onclick="openUploadModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-600">
+                  Upload Matching Dataset
+                </button>
+              </div>
+
+              <div id="customer-data-container" class="space-y-6">
+                <!-- Segment Summary Cards -->
+                <div id="segment-summary-cards" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <!-- Populated via JS -->
+                </div>
+
+                <!-- Customer Search & Filter Bar -->
+                <div class="glass rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-between border border-slate-800">
+                  <div class="relative flex-1 min-w-[200px]">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
+                    <input id="customer-search-input" type="text" placeholder="Search customer ID or name…" oninput="filterCustomerTable()"
+                           class="w-full bg-slate-900/60 border border-slate-700/70 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
+                  </div>
+                  <select id="customer-segment-filter" onchange="filterCustomerTable()"
+                          class="bg-slate-900/60 border border-slate-700/70 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition-colors">
+                    <option value="">All Segments</option>
+                    <option value="High-Value">High-Value</option>
+                    <option value="Frequent">Frequent</option>
+                    <option value="Occasional">Occasional</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                  <span id="customer-count-badge" class="text-xs font-mono text-slate-400"></span>
+                </div>
+
+                <!-- Customer Table -->
+                <div class="glass rounded-2xl overflow-hidden border border-slate-800">
+                  <div class="overflow-x-auto max-h-[540px] custom-scroll">
+                    <table class="w-full text-left text-xs">
+                      <thead class="bg-slate-900/80 sticky top-0 border-b border-slate-800 text-slate-400 font-semibold z-10">
+                        <tr>
+                          <th class="py-3 px-4">Rank</th>
+                          <th class="py-3 px-4">Customer ID / Name</th>
+                          <th class="py-3 px-4 text-center">Orders</th>
+                          <th class="py-3 px-4 text-right">Total Spent (₹)</th>
+                          <th class="py-3 px-4 text-center">Last Order Date</th>
+                          <th class="py-3 px-4">Segment</th>
+                          <th class="py-3 px-4">Why this segment?</th>
+                        </tr>
+                      </thead>
+                      <tbody id="customer-table-tbody" class="divide-y divide-slate-800/60"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================================================ -->
+          <!-- SECTION 3: DATA EXPLORER                                     -->
+          <!-- ============================================================ -->
+          <section id="sec-explorer" class="space-y-6 hidden">
+            
+            <!-- Clean Empty State (When no dataset active) -->
+            <div id="empty-state-explorer" class="glass rounded-3xl p-16 text-center flex flex-col items-center justify-center border border-slate-800">
+              <div class="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-4 bg-emerald-500/10 border border-emerald-500/20">
+                📋
+              </div>
+              <h3 class="text-xl font-bold text-white mb-2">No data yet. Upload a CSV or JSON file to get started</h3>
+              <p class="text-xs text-slate-400 max-w-md mb-6 leading-relaxed">
+                Inspect, search, sort, and export exact original records directly from your active dataset.
+              </p>
+              <button onclick="openUploadModal()" class="px-6 py-2.5 rounded-xl font-bold text-xs text-white shadow-lg shadow-brand-500/25 hover:scale-105 transition-all" style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
+                Upload File
+              </button>
+            </div>
+
+            <!-- Content Container -->
+            <div id="content-explorer" class="space-y-4 hidden">
+              
+              <!-- Filter & Export Controls -->
+              <div class="glass rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-between border border-slate-800">
+                <div class="relative flex-1 min-w-[220px]">
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
+                  <input id="explorer-search" type="text" placeholder="Search across all fields…" oninput="debounceExplorerSearch()"
+                         class="w-full bg-slate-900/60 border border-slate-700/70 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
+                </div>
+                
+                <div class="flex items-center gap-2">
+                  <span id="explorer-row-stats" class="text-xs text-slate-400 font-mono"></span>
+                  <a href="/api/transactions/export" download="dataset_export.csv"
+                     class="px-3.5 py-2 rounded-xl text-xs font-semibold glass border border-slate-700/80 hover:border-slate-500 text-slate-200 flex items-center gap-1.5 transition-colors">
+                    <span>📥</span> Export CSV
+                  </a>
+                </div>
+              </div>
+
+              <!-- Data Explorer Table -->
+              <div class="glass rounded-2xl overflow-hidden border border-slate-800">
+                <div class="overflow-x-auto max-h-[580px] custom-scroll">
+                  <table class="w-full text-left text-xs whitespace-nowrap">
+                    <thead id="explorer-thead" class="bg-slate-900/90 sticky top-0 border-b border-slate-800 text-slate-400 font-semibold z-10">
+                      <!-- Dynamically populated with the file's own original column headers -->
+                    </thead>
+                    <tbody id="explorer-tbody" class="divide-y divide-slate-800/60 font-mono text-[11px]"></tbody>
+                  </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                <div class="p-3.5 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                  <span id="explorer-page-info">Page 1 of 1</span>
+                  <div class="flex items-center gap-2">
+                    <button id="explorer-btn-prev" onclick="changeExplorerPage(-1)" disabled
+                            class="px-3 py-1 rounded-lg glass border border-slate-800 disabled:opacity-30 disabled:cursor-not-allowed hover:text-white transition-colors">
+                      ← Prev
+                    </button>
+                    <button id="explorer-btn-next" onclick="changeExplorerPage(1)" disabled
+                            class="px-3 py-1 rounded-lg glass border border-slate-800 disabled:opacity-30 disabled:cursor-not-allowed hover:text-white transition-colors">
+                      Next →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 3. UPLOAD DATA MODAL (CSV & JSON with Preview & Mapping)      -->
+  <!-- ============================================================ -->
+  <div id="upload-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
+    <div class="glass w-full max-w-3xl rounded-3xl p-6 shadow-2xl relative border border-slate-700/80 max-h-[90vh] flex flex-col">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div>
+          <h3 class="font-bold text-base text-white flex items-center gap-2">
+            <span>📤</span> Upload Dataset (CSV & JSON)
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">Parse, preview, and map fields before saving into your isolated dataset</p>
+        </div>
+        <button onclick="closeUploadModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="flex-1 overflow-y-auto custom-scroll py-4 space-y-6">
+
+        <!-- STEP 1: File Selection -->
+        <div id="upload-step-select">
+          <div id="drop-area" onclick="document.getElementById('file-input').click()"
+               class="border-2 border-dashed border-slate-700 hover:border-brand-500 rounded-2xl p-10 text-center cursor-pointer transition-all bg-slate-900/40 hover:bg-brand-950/20">
+            <input type="file" id="file-input" accept=".csv,.json" class="hidden" onchange="onFileChosen(event)">
+            <div class="w-14 h-14 mx-auto rounded-2xl bg-brand-500/10 flex items-center justify-center text-3xl mb-3 border border-brand-500/20">
+              📁
+            </div>
+            <p class="text-sm font-bold text-slate-200">Click to select, or drag and drop a file here</p>
+            <p class="text-xs text-slate-500 mt-1">Supports <span class="text-brand-400 font-mono">.CSV</span> and <span class="text-brand-400 font-mono">.JSON</span> (Max 10 MB)</p>
+          </div>
+          <div id="upload-file-error" class="hidden mt-3 p-3 rounded-xl bg-red-950/50 border border-red-800 text-red-300 text-xs"></div>
+        </div>
+
+        <!-- STEP 2: Preview & Column Mapping -->
+        <div id="upload-step-mapping" class="hidden space-y-5">
+          
+          <!-- File info summary -->
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between text-xs">
+            <div>
+              <span class="text-slate-400">File:</span>
+              <span id="preview-file-name" class="font-bold text-white font-mono ml-1"></span>
+              <span class="mx-2 text-slate-600">|</span>
+              <span id="preview-row-count" class="text-brand-400 font-mono font-bold"></span>
+            </div>
+            <button onclick="resetUploadModal()" class="text-xs text-slate-400 hover:text-white underline">
+              Choose different file
+            </button>
+          </div>
+
+          <!-- Column Mapping Section -->
+          <div>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Confirm Column Mappings</h4>
+            <p class="text-[11px] text-slate-500 mb-3">
+              We auto-detected column matches from your file. Confirm or adjust the mappings below:
+            </p>
+            <div id="mapping-fields-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <!-- Dynamically rendered mapping selectors -->
+            </div>
+          </div>
+
+          <!-- First 10 Rows Preview Table -->
+          <div>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">First 10 Rows Preview</h4>
+            <div class="overflow-x-auto rounded-xl border border-slate-800 max-h-48 custom-scroll">
+              <table class="w-full text-left text-[11px] font-mono whitespace-nowrap">
+                <thead id="preview-table-thead" class="bg-slate-900/90 text-slate-400 border-b border-slate-800 sticky top-0"></thead>
+                <tbody id="preview-table-tbody" class="divide-y divide-slate-800/60"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
+        <button onclick="closeUploadModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+          Cancel
+        </button>
+        <button id="btn-confirm-upload" onclick="submitUploadConfirm()" disabled
+                class="px-6 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-lg shadow-brand-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
+          Confirm & Save Dataset
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- ============================================================ -->
+  <!-- 4. APPLICATION LOGIC JAVASCRIPT                               -->
+  <!-- ============================================================ -->
+  <script>
+    // Global Application State
+    let currentUser = null;
+    let activeDataset = null;
+    let currentSection = 'summary';
+    let cachedSummary = null;
+    let cachedCustomers = [];
+    let currentExplorerPage = 1;
+    let explorerDebounceTimer = null;
+    let stagedUploadData = null; // { fileName, fileType, headers, allRows, suggestedMapping }
+
+    // Chart.js instances
+    let chartMonthly = null;
+    let chartCategory = null;
+    let chartLocation = null;
+    let chartPayment = null;
+
+    // ──────────────────────────────────────────────────────────
+    // Shared API Fetch Wrapper (Sends JWT Bearer Token + 401 Redirect)
+    // ──────────────────────────────────────────────────────────
+    async function apiFetch(url, options = {}) {
+      const token = localStorage.getItem('token');
+      const headers = { ...(options.headers || {}) };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(url, {
+        credentials: 'include',
+        ...options,
+        headers,
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        currentUser = null;
+        showAuthScreen();
+        toast('Session expired. Please sign in.', 'error');
+        return null;
+      }
+
+      return res;
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // Toast Notification Utility
+    // ──────────────────────────────────────────────────────────
+    function toast(message, type = 'info') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      const colors = {
+        success: 'bg-emerald-950/90 border-emerald-700 text-emerald-200',
+        error: 'bg-red-950/90 border-red-700 text-red-200',
+        info: 'bg-brand-950/90 border-brand-700 text-brand-200',
+      };
+      t.className = `p-3 rounded-xl border text-xs shadow-2xl backdrop-blur-md transition-all duration-300 transform translate-y-4 opacity-0 pointer-events-auto ${colors[type] || colors.info}`;
+      t.textContent = message;
+      c.appendChild(t);
+
+      requestAnimationFrame(() => {
+        t.classList.remove('translate-y-4', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        t.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => t.remove(), 300);
+      }, 3500);
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // Authentication Flow
+    // ──────────────────────────────────────────────────────────
+    function switchAuthTab(tab) {
+      document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+      document.getElementById('form-signup').classList.toggle('hidden', tab !== 'signup');
+      document.getElementById('tab-login').className = tab === 'login'
+        ? 'flex-1 pb-3 border-b-2 border-brand-500 text-brand-400 transition-colors'
+        : 'flex-1 pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-colors';
+      document.getElementById('tab-signup').className = tab === 'signup'
+        ? 'flex-1 pb-3 border-b-2 border-brand-500 text-brand-400 transition-colors'
+        : 'flex-1 pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-colors';
+      document.getElementById('auth-error-box').classList.add('hidden');
+    }
+
+    function showAuthError(msg) {
+      const box = document.getElementById('auth-error-box');
+      box.textContent = msg;
+      box.classList.remove('hidden');
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-login-submit');
+      btn.disabled = true;
+      btn.textContent = 'Signing in…';
+      document.getElementById('auth-error-box').classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            email: document.getElementById('login-email').value.trim(),
+            password: document.getElementById('login-password').value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showAuthError(data.error || 'Login failed.');
+          return;
+        }
+
+        localStorage.setItem('token', data.token);
+        currentUser = data.user;
+        showApp();
+        toast(`Welcome back, ${data.user.username}!`, 'success');
+      } catch (err) {
+        showAuthError('Server unreachable. Please check connection.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign In to Dashboard';
+      }
+    }
+
+    async function handleSignup(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-signup-submit');
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+      document.getElementById('auth-error-box').classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            username: document.getElementById('signup-username').value.trim(),
+            email: document.getElementById('signup-email').value.trim(),
+            password: document.getElementById('signup-password').value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showAuthError(data.error || 'Registration failed.');
+          return;
+        }
+
+        localStorage.setItem('token', data.token);
+        currentUser = data.user;
+        showApp();
+        toast(`Account created! Welcome, ${data.user.username}!`, 'success');
+      } catch (err) {
+        showAuthError('Server unreachable. Please check connection.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    }
+
+    async function handleLogout() {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      localStorage.removeItem('token');
+      currentUser = null;
+      activeDataset = null;
+      showAuthScreen();
+      toast('Logged out successfully.', 'info');
+    }
+
+    function showAuthScreen() {
+      document.getElementById('auth-screen').classList.remove('hidden');
+      document.getElementById('app-root').classList.add('hidden');
+    }
+
+    function showApp() {
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('app-root').classList.remove('hidden');
+
+      if (currentUser) {
+        document.getElementById('user-display-name').textContent = currentUser.username || 'User';
+        document.getElementById('user-display-role').textContent = currentUser.role || 'Analyst';
+        document.getElementById('user-avatar').textContent = (currentUser.username || 'U')[0].toUpperCase();
+      }
+
+      loadDatasets();
+      switchSection('summary');
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // Section Switching (Summary, Customers, Explorer)
+    // ──────────────────────────────────────────────────────────
+    const SECTION_TITLES = {
+      summary: { title: 'Executive Summary', subtitle: 'Live KPIs, sales trends & category breakdown' },
+      customers: { title: 'Customer Segments', subtitle: 'Ranked & segmented customers with rule justifications' },
+      explorer: { title: 'Data Explorer', subtitle: 'Search, filter, paginate & export original dataset records' },
+    };
+
+    function switchSection(sec) {
+      currentSection = sec;
+      ['summary', 'customers', 'explorer'].forEach(s => {
+        document.getElementById(`sec-${s}`).classList.toggle('hidden', s !== sec);
+        document.getElementById(`nav-${s}`).classList.toggle('active', s === sec);
+      });
+
+      const meta = SECTION_TITLES[sec] || {};
+      document.getElementById('header-section-title').textContent = meta.title;
+      document.getElementById('header-section-subtitle').textContent = meta.subtitle;
+
+      if (sec === 'summary') loadSummary();
+      if (sec === 'customers') loadCustomers();
+      if (sec === 'explorer') loadExplorer(1);
+    }
+
+    function toggleMobileSidebar() {
+      const sb = document.getElementById('sidebar');
+      const bd = document.getElementById('sidebar-backdrop');
+      const isOpen = !sb.classList.contains('-translate-x-full');
+      sb.classList.toggle('-translate-x-full', isOpen);
+      bd.classList.toggle('hidden', isOpen);
+    }
+
+    function toggleTheme() {
+      const isDark = document.body.classList.contains('dark');
+      document.body.classList.toggle('dark', !isDark);
+      document.documentElement.classList.toggle('light', isDark);
+      document.getElementById('theme-icon').textContent = isDark ? '☀️' : '🌙';
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // Datasets Management
+    // ──────────────────────────────────────────────────────────
+    async function loadDatasets() {
+      try {
+        const res = await apiFetch('/api/datasets');
+        if (!res) return;
+        const list = await res.json();
+
+        document.getElementById('dataset-total-count').textContent = list.length;
+        const active = list.find(d => d.is_active === 1) || null;
+        activeDataset = active;
+
+        updateActiveDatasetBanner(active);
+        renderDatasetsDropdown(list);
+      } catch (err) {
+        console.error('Failed to load datasets:', err);
+      }
+    }
+
+    function updateActiveDatasetBanner(ds) {
+      const banner = document.getElementById('active-dataset-banner');
+      const label = document.getElementById('active-file-label');
+
+      if (!ds) {
+        banner.classList.add('hidden');
+        label.textContent = 'No Dataset';
+        return;
+      }
+
+      banner.classList.remove('hidden');
+      label.textContent = ds.file_name;
+      document.getElementById('banner-file-name').textContent = ds.file_name;
+      document.getElementById('banner-row-count').textContent = `${ds.row_count.toLocaleString()} rows`;
+      document.getElementById('banner-upload-time').textContent = new Date(ds.uploaded_at).toLocaleString('en-IN');
+    }
+
+    function renderDatasetsDropdown(list) {
+      const container = document.getElementById('datasets-list');
+      if (list.length === 0) {
+        container.innerHTML = '<div class="py-4 text-center text-slate-500">No datasets uploaded yet.</div>';
+        return;
+      }
+
+      container.innerHTML = list.map(d => `
+        <div class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/60 transition-colors ${d.is_active ? 'bg-brand-500/10 border border-brand-500/30' : ''}">
+          <div class="flex-1 min-w-0 cursor-pointer pr-2" onclick="selectDataset(${d.id})">
+            <p class="font-semibold text-slate-200 truncate flex items-center gap-1.5">
+              <span>${d.file_type === 'JSON' ? '📄' : '📊'}</span>
+              <span>${d.file_name}</span>
+              ${d.is_active ? '<span class="text-[9px] bg-brand-500/20 text-brand-300 px-1.5 py-0.5 rounded font-bold">ACTIVE</span>' : ''}
+            </p>
+            <p class="text-[10px] text-slate-500">${d.row_count} rows • ${new Date(d.uploaded_at).toLocaleDateString()}</p>
+          </div>
+          <button onclick="deleteDataset(${d.id}, '${d.file_name.replace(/'/g, "\\'")}')" title="Delete Dataset"
+                  class="p-1 rounded text-slate-500 hover:text-red-400 hover:bg-red-950/30 transition-colors">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function toggleDatasetsDropdown() {
+      const dd = document.getElementById('datasets-dropdown');
+      dd.classList.toggle('hidden');
+    }
+
+    // Close dropdown on outside click
+    document.addEventListener('click', (e) => {
+      const btn = document.getElementById('btn-datasets-menu');
+      const dd = document.getElementById('datasets-dropdown');
+      if (btn && dd && !btn.contains(e.target) && !dd.contains(e.target)) {
+        dd.classList.add('hidden');
+      }
+    });
+
+    async function selectDataset(id) {
+      document.getElementById('datasets-dropdown').classList.add('hidden');
+      try {
+        const res = await apiFetch('/api/datasets/select', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataset_id: id }),
+        });
+        if (!res) return;
+        toast('Active dataset changed.', 'success');
+        await loadDatasets();
+        refreshAllSections();
+      } catch (err) {
+        toast('Failed to switch dataset.', 'error');
+      }
+    }
+
+    async function deleteDataset(id, name) {
+      if (!confirm(`Are you sure you want to delete dataset "${name}"?`)) return;
+      try {
+        const res = await apiFetch(`/api/datasets/${id}`, { method: 'DELETE' });
+        if (!res) return;
+        toast(`Dataset "${name}" deleted.`, 'info');
+        await loadDatasets();
+        refreshAllSections();
+      } catch (err) {
+        toast('Failed to delete dataset.', 'error');
+      }
+    }
+
+    function refreshAllSections() {
+      if (currentSection === 'summary') loadSummary();
+      if (currentSection === 'customers') loadCustomers();
+      if (currentSection === 'explorer') loadExplorer(1);
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // SECTION 1: EXECUTIVE SUMMARY LOGIC
+    // ──────────────────────────────────────────────────────────
+    async function loadSummary() {
+      const emptyEl = document.getElementById('empty-state-summary');
+      const contentEl = document.getElementById('content-summary');
+
+      try {
+        const res = await apiFetch('/api/analytics/summary');
+        if (!res) return;
+        const data = await res.json();
+
+        if (!data.hasDataset) {
+          emptyEl.classList.remove('hidden');
+          contentEl.classList.add('hidden');
+          return;
+        }
+
+        emptyEl.classList.add('hidden');
+        contentEl.classList.remove('hidden');
+
+        renderSummaryKPIs(data.metrics, data.availableFields);
+        renderSummaryColumnNotes(data.availableFields);
+        renderSummaryCharts(data);
+      } catch (err) {
+        console.error('Failed to load summary:', err);
+      }
+    }
+
+    function renderSummaryKPIs(m, fields) {
+      const container = document.getElementById('summary-kpis');
+      const cards = [];
+
+      // Total orders (always available)
+      cards.push({
+        label: 'Total Orders',
+        value: parseInt(m.total_orders).toLocaleString(),
+        sub: 'Total rows in file',
+        icon: '📦',
+        color: '#4f46e5'
+      });
+
+      // Gross Sales (only if price mapped)
+      if (fields.hasPrice) {
+        cards.push({
+          label: 'Total Revenue',
+          value: `₹${parseFloat(m.gross_sales).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+          sub: 'Gross transaction value',
+          icon: '💰',
+          color: '#10b981'
+        });
+
+        cards.push({
+          label: 'Avg Order Value',
+          value: `₹${parseFloat(m.avg_order_value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+          sub: 'Average order size',
+          icon: '📈',
+          color: '#8b5cf6'
+        });
+      }
+
+      // Total Discounts (only if discount mapped)
+      if (fields.hasPrice && parseFloat(m.total_discounts) > 0) {
+        cards.push({
+          label: 'Total Discounts',
+          value: `₹${parseFloat(m.total_discounts).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+          sub: 'Recorded price markdowns',
+          icon: '🏷️',
+          color: '#f59e0b'
+        });
+      }
+
+      // Return Rate (only if status mapped)
+      if (fields.hasStatus && m.return_rate !== null) {
+        cards.push({
+          label: 'Return Rate',
+          value: `${m.return_rate}%`,
+          sub: 'Returned status share',
+          icon: '↩️',
+          color: '#ef4444'
+        });
+      }
+
+      container.innerHTML = cards.map(c => `
+        <div class="glass rounded-2xl p-4 border border-slate-800 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">${c.label}</span>
+            <span class="w-7 h-7 rounded-lg flex items-center justify-center text-sm" style="background:${c.color}20">${c.icon}</span>
+          </div>
+          <p class="text-xl font-extrabold text-white">${c.value}</p>
+          <p class="text-[10px] text-slate-500 mt-1">${c.sub}</p>
+        </div>
+      `).join('');
+    }
+
+    function renderSummaryColumnNotes(fields) {
+      const noteBox = document.getElementById('summary-column-notes');
+      const textEl = document.getElementById('summary-column-notes-text');
+      const missing = [];
+
+      if (!fields.hasDate) missing.push('Date (for monthly trends)');
+      if (!fields.hasPrice) missing.push('Price (for revenue KPIs)');
+      if (!fields.hasCategory) missing.push('Category (for category share)');
+      if (!fields.hasLocation) missing.push('Location (for geographic breakdown)');
+      if (!fields.hasPayment) missing.push('Payment Type (for payment distribution)');
+
+      if (missing.length > 0) {
+        noteBox.classList.remove('hidden');
+        textEl.textContent = `Optional columns not found in file: ${missing.join(', ')}. Upload a dataset with these columns to enable additional charts.`;
+      } else {
+        noteBox.classList.add('hidden');
+      }
+    }
+
+    function renderSummaryCharts(data) {
+      const { availableFields, monthlyTrend, categoryPerformance, locationBreakdown, paymentBreakdown, topProducts } = data;
+
+      // 1. Monthly Trend
+      const cardMonthly = document.getElementById('card-chart-monthly');
+      if (availableFields.hasDate && monthlyTrend.length > 0) {
+        cardMonthly.classList.remove('hidden');
+        if (chartMonthly) chartMonthly.destroy();
+        const ctx = document.getElementById('chart-monthly').getContext('2d');
+        chartMonthly = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: monthlyTrend.map(r => r.month),
+            datasets: [
+              {
+                label: availableFields.hasPrice ? 'Revenue (₹)' : 'Orders',
+                data: monthlyTrend.map(r => availableFields.hasPrice ? r.revenue : r.orders),
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                fill: true,
+                tension: 0.35,
+                borderWidth: 2,
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+              y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+            }
+          }
+        });
+      } else {
+        cardMonthly.classList.add('hidden');
+      }
+
+      // 2. Category Chart
+      const cardCategory = document.getElementById('card-chart-category');
+      if (availableFields.hasCategory && categoryPerformance.length > 0) {
+        cardCategory.classList.remove('hidden');
+        if (chartCategory) chartCategory.destroy();
+        const ctx = document.getElementById('chart-category').getContext('2d');
+        chartCategory = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: categoryPerformance.map(r => r.category),
+            datasets: [{
+              data: categoryPerformance.map(r => availableFields.hasPrice ? r.revenue : r.orders),
+              backgroundColor: ['#6366f1', '#a855f7', '#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#14b8a6'],
+              borderWidth: 0,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } }
+            }
+          }
+        });
+      } else {
+        cardCategory.classList.add('hidden');
+      }
+
+      // 3. Location Chart
+      const cardLocation = document.getElementById('card-chart-location');
+      if (availableFields.hasLocation && locationBreakdown.length > 0) {
+        cardLocation.classList.remove('hidden');
+        if (chartLocation) chartLocation.destroy();
+        const ctx = document.getElementById('chart-location').getContext('2d');
+        chartLocation = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: locationBreakdown.map(r => r.location),
+            datasets: [{
+              label: 'Orders',
+              data: locationBreakdown.map(r => r.orders),
+              backgroundColor: '#a855f7',
+              borderRadius: 6,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+              y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+            }
+          }
+        });
+      } else {
+        cardLocation.classList.add('hidden');
+      }
+
+      // 4. Payment Chart
+      const cardPayment = document.getElementById('card-chart-payment');
+      if (availableFields.hasPayment && paymentBreakdown.length > 0) {
+        cardPayment.classList.remove('hidden');
+        if (chartPayment) chartPayment.destroy();
+        const ctx = document.getElementById('chart-payment').getContext('2d');
+        chartPayment = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: paymentBreakdown.map(r => r.payment_type),
+            datasets: [{
+              data: paymentBreakdown.map(r => r.count),
+              backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#6366f1', '#ec4899', '#8b5cf6'],
+              borderWidth: 0,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } }
+            }
+          }
+        });
+      } else {
+        cardPayment.classList.add('hidden');
+      }
+
+      // 5. Top Products Table
+      const cardProducts = document.getElementById('card-top-products');
+      if (availableFields.hasProduct && topProducts.length > 0) {
+        cardProducts.classList.remove('hidden');
+        document.getElementById('top-products-tbody').innerHTML = topProducts.map((p, idx) => `
+          <tr class="hover:bg-slate-800/40">
+            <td class="py-2.5 px-3 font-mono text-slate-500">${idx + 1}</td>
+            <td class="py-2.5 px-3 font-semibold text-white">${p.product}</td>
+            <td class="py-2.5 px-3 text-slate-400">${p.category}</td>
+            <td class="py-2.5 px-3 text-right font-mono text-slate-300">${p.orders}</td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">₹${p.revenue.toLocaleString()}</td>
+          </tr>
+        `).join('');
+      } else {
+        cardProducts.classList.add('hidden');
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // SECTION 2: CUSTOMER SEGMENTS LOGIC
+    // ──────────────────────────────────────────────────────────
+    async function loadCustomers() {
+      const emptyEl = document.getElementById('empty-state-customers');
+      const contentEl = document.getElementById('content-customers');
+
+      try {
+        const res = await apiFetch('/api/analytics/customers');
+        if (!res) return;
+        const data = await res.json();
+
+        if (!data.hasDataset) {
+          emptyEl.classList.remove('hidden');
+          contentEl.classList.add('hidden');
+          return;
+        }
+
+        emptyEl.classList.add('hidden');
+        contentEl.classList.remove('hidden');
+
+        // Check if customer column exists
+        const noColAlert = document.getElementById('no-customer-col-alert');
+        const dataCont = document.getElementById('customer-data-container');
+
+        if (!data.hasCustomerData) {
+          noColAlert.classList.remove('hidden');
+          document.getElementById('no-customer-col-msg').textContent = data.message;
+          dataCont.classList.add('hidden');
+          return;
+        }
+
+        noColAlert.classList.add('hidden');
+        dataCont.classList.remove('hidden');
+
+        cachedCustomers = data.customers || [];
+        renderSegmentSummaryCards(cachedCustomers);
+        filterCustomerTable();
+      } catch (err) {
+        console.error('Failed to load customers:', err);
+      }
+    }
+
+    function renderSegmentSummaryCards(customers) {
+      const counts = { 'High-Value': 0, 'Frequent': 0, 'Occasional': 0, 'Inactive': 0 };
+      customers.forEach(c => {
+        if (counts[c.segment] !== undefined) counts[c.segment]++;
+      });
+
+      const meta = {
+        'High-Value': { icon: '👑', color: 'border-purple-500/40 text-purple-300', desc: 'Top spenders with multiple purchases' },
+        'Frequent': { icon: '🔥', color: 'border-emerald-500/40 text-emerald-300', desc: 'Regular repeat buyers' },
+        'Occasional': { icon: '🌤️', color: 'border-amber-500/40 text-amber-300', desc: 'Sparse purchase history' },
+        'Inactive': { icon: '😴', color: 'border-red-500/40 text-red-300', desc: 'No recent purchase activity' },
+      };
+
+      document.getElementById('segment-summary-cards').innerHTML = Object.entries(counts).map(([seg, count]) => `
+        <div class="glass rounded-2xl p-4 border border-slate-800 hover:border-slate-700 cursor-pointer transition-all" onclick="setCustomerSegmentFilter('${seg}')">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-lg">${meta[seg].icon}</span>
+            <span class="badge-seg seg-${seg}">${seg}</span>
+          </div>
+          <p class="text-2xl font-black text-white">${count}</p>
+          <p class="text-[10px] text-slate-500 mt-1">${meta[seg].desc}</p>
+        </div>
+      `).join('');
+    }
+
+    function setCustomerSegmentFilter(seg) {
+      document.getElementById('customer-segment-filter').value = seg;
+      filterCustomerTable();
+    }
+
+    function filterCustomerTable() {
+      const search = (document.getElementById('customer-search-input').value || '').toLowerCase().trim();
+      const segFilter = document.getElementById('customer-segment-filter').value;
+
+      const filtered = cachedCustomers.filter(c => {
+        const nameMatch = (c.customer_name || '').toLowerCase().includes(search) || (c.customer_id || '').toLowerCase().includes(search);
+        const segMatch = !segFilter || c.segment === segFilter;
+        return nameMatch && segMatch;
+      });
+
+      document.getElementById('customer-count-badge').textContent = `${filtered.length} of ${cachedCustomers.length} customers`;
+
+      const tbody = document.getElementById('customer-table-tbody');
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-500">No customers match the current filter.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(c => `
+        <tr class="hover:bg-slate-800/40">
+          <td class="py-3 px-4 font-mono text-brand-400 font-bold">#${c.rank}</td>
+          <td class="py-3 px-4">
+            <div class="font-bold text-white">${c.customer_name || c.customer_id || '—'}</div>
+            ${c.customer_id && c.customer_name ? `<div class="font-mono text-[10px] text-slate-500">ID: ${c.customer_id}</div>` : ''}
+          </td>
+          <td class="py-3 px-4 text-center font-mono text-slate-300">${c.total_orders}</td>
+          <td class="py-3 px-4 text-right font-mono font-bold text-emerald-400">₹${parseFloat(c.total_spent).toLocaleString()}</td>
+          <td class="py-3 px-4 text-center font-mono text-slate-400">${c.last_order_date ? new Date(c.last_order_date).toLocaleDateString('en-IN') : '—'}</td>
+          <td class="py-3 px-4"><span class="badge-seg seg-${c.segment}">${c.segment}</span></td>
+          <td class="py-3 px-4 text-slate-400 max-w-xs text-[11px] leading-relaxed">${c.justification}</td>
+        </tr>
+      `).join('');
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // SECTION 3: DATA EXPLORER LOGIC
+    // ──────────────────────────────────────────────────────────
+    function debounceExplorerSearch() {
+      clearTimeout(explorerDebounceTimer);
+      explorerDebounceTimer = setTimeout(() => {
+        loadExplorer(1);
+      }, 350);
+    }
+
+    async function loadExplorer(page = 1) {
+      currentExplorerPage = page;
+      const search = (document.getElementById('explorer-search')?.value || '').trim();
+
+      const emptyEl = document.getElementById('empty-state-explorer');
+      const contentEl = document.getElementById('content-explorer');
+
+      try {
+        const queryParams = new URLSearchParams({ page, limit: 20 });
+        if (search) queryParams.set('search', search);
+
+        const res = await apiFetch(`/api/transactions?${queryParams}`);
+        if (!res) return;
+        const data = await res.json();
+
+        if (!data.hasDataset) {
+          emptyEl.classList.remove('hidden');
+          contentEl.classList.add('hidden');
+          return;
+        }
+
+        emptyEl.classList.add('hidden');
+        contentEl.classList.remove('hidden');
+
+        document.getElementById('explorer-row-stats').textContent = `${data.total.toLocaleString()} rows`;
+        document.getElementById('explorer-page-info').textContent = `Page ${data.page} of ${data.pages} (${data.total} records)`;
+        document.getElementById('explorer-btn-prev').disabled = data.page <= 1;
+        document.getElementById('explorer-btn-next').disabled = data.page >= data.pages;
+
+        renderExplorerTable(data.headers, data.rows, data.hasIdColumn);
+      } catch (err) {
+        console.error('Failed to load explorer:', err);
+      }
+    }
+
+    function renderExplorerTable(headers, rows, hasIdColumn) {
+      const thead = document.getElementById('explorer-thead');
+      const tbody = document.getElementById('explorer-tbody');
+
+      // Requirement 5: If the file has no ID column, show a separate "Row #" column labeled clearly as row position
+      const showRowPosHeader = !hasIdColumn;
+
+      thead.innerHTML = `
+        <tr>
+          ${showRowPosHeader ? '<th class="py-3 px-3 text-slate-500 font-mono">Row # (position)</th>' : ''}
+          ${headers.map(h => `<th class="py-3 px-4 capitalize">${h}</th>`).join('')}
+        </tr>
+      `;
+
+      if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${headers.length + (showRowPosHeader ? 1 : 0)}" class="py-12 text-center text-slate-500 font-sans">No matching records found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rows.map(r => `
+        <tr class="hover:bg-slate-800/40">
+          ${showRowPosHeader ? `<td class="py-2.5 px-3 text-slate-500 font-bold">${r.row_number}</td>` : ''}
+          ${headers.map(h => {
+            const val = r.raw_data[h];
+            const displayVal = (val !== undefined && val !== null && String(val).trim() !== '') ? val : '—';
+            return `<td class="py-2.5 px-4 text-slate-300">${displayVal}</td>`;
+          }).join('')}
+        </tr>
+      `).join('');
+    }
+
+    function changeExplorerPage(delta) {
+      loadExplorer(currentExplorerPage + delta);
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // UPLOAD DATA MODAL WORKFLOW (Preview & Confirmation)
+    // ──────────────────────────────────────────────────────────
+    function openUploadModal() {
+      resetUploadModal();
+      document.getElementById('upload-modal').classList.remove('hidden');
+    }
+
+    function closeUploadModal() {
+      document.getElementById('upload-modal').classList.add('hidden');
+    }
+
+    function resetUploadModal() {
+      stagedUploadData = null;
+      document.getElementById('file-input').value = '';
+      document.getElementById('upload-step-select').classList.remove('hidden');
+      document.getElementById('upload-step-mapping').classList.add('hidden');
+      document.getElementById('upload-file-error').classList.add('hidden');
+      document.getElementById('btn-confirm-upload').disabled = true;
+    }
+
+    async function onFileChosen(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const errorBox = document.getElementById('upload-file-error');
+      errorBox.classList.add('hidden');
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const token = localStorage.getItem('token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+        const res = await fetch('/api/upload/preview', {
+          method: 'POST',
+          credentials: 'include',
+          headers,
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          errorBox.textContent = data.error || 'Failed to parse file preview.';
+          errorBox.classList.remove('hidden');
+          return;
+        }
+
+        // Staged data
+        stagedUploadData = data;
+        renderMappingScreen(data);
+      } catch (err) {
+        errorBox.textContent = `Upload error: ${err.message}`;
+        errorBox.classList.remove('hidden');
+      }
+    }
+
+    function renderMappingScreen(data) {
+      document.getElementById('upload-step-select').classList.add('hidden');
+      document.getElementById('upload-step-mapping').classList.remove('hidden');
+      document.getElementById('btn-confirm-upload').disabled = false;
+
+      document.getElementById('preview-file-name').textContent = data.fileName;
+      document.getElementById('preview-row-count').textContent = `${data.totalRows.toLocaleString()} rows`;
+
+      // Standard Target Fields
+      const targetFields = [
+        { key: 'customer_id', label: 'Customer ID', desc: 'Exact ID from file' },
+        { key: 'customer_name', label: 'Customer Name', desc: 'Exact name from file' },
+        { key: 'product', label: 'Product Name / SKU', desc: 'Item name or code' },
+        { key: 'category', label: 'Product Category', desc: 'Category or department' },
+        { key: 'price', label: 'Price / Amount (₹)', desc: 'Unit price or total rate' },
+        { key: 'quantity', label: 'Quantity', desc: 'Units purchased' },
+        { key: 'order_date', label: 'Order Date', desc: 'Purchase date' },
+        { key: 'discount', label: 'Discount', desc: 'Discount percentage or amount' },
+        { key: 'location', label: 'Location / City', desc: 'Customer location' },
+        { key: 'payment_type', label: 'Payment Method', desc: 'Card, UPI, Net Banking, etc.' },
+        { key: 'status', label: 'Order Status', desc: 'Completed, Returned, etc.' },
+      ];
+
+      const mappingGrid = document.getElementById('mapping-fields-grid');
+      mappingGrid.innerHTML = targetFields.map(tf => {
+        const suggested = data.suggestedMapping[tf.key] || '';
+        return `
+          <div class="p-3 rounded-xl bg-slate-900/40 border border-slate-800">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-xs font-bold text-slate-200">${tf.label}</label>
+              <span class="text-[10px] text-slate-500">${tf.desc}</span>
+            </div>
+            <select id="map-select-${tf.key}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+              <option value="">-- Not in file --</option>
+              ${data.headers.map(h => `<option value="${h}" ${h === suggested ? 'selected' : ''}>${h}</option>`).join('')}
+            </select>
+          </div>
+        `;
+      }).join('');
+
+      // Preview Table (first 10 rows)
+      const thead = document.getElementById('preview-table-thead');
+      const tbody = document.getElementById('preview-table-tbody');
+
+      thead.innerHTML = `<tr>${data.headers.map(h => `<th class="py-2 px-3 text-slate-400 capitalize">${h}</th>`).join('')}</tr>`;
+      tbody.innerHTML = data.previewRows.map(r => `
+        <tr class="hover:bg-slate-800/40">
+          ${data.headers.map(h => `<td class="py-1.5 px-3 text-slate-300">${r[h] || '—'}</td>`).join('')}
+        </tr>
+      `).join('');
+    }
+
+    async function submitUploadConfirm() {
+      if (!stagedUploadData) return;
+
+      const btn = document.getElementById('btn-confirm-upload');
+      btn.disabled = true;
+      btn.textContent = 'Saving dataset inside transaction…';
+
+      // Read user confirmed mappings
+      const confirmedMapping = {
+        customer_id: document.getElementById('map-select-customer_id').value || null,
+        customer_name: document.getElementById('map-select-customer_name').value || null,
+        product: document.getElementById('map-select-product').value || null,
+        category: document.getElementById('map-select-category').value || null,
+        price: document.getElementById('map-select-price').value || null,
+        quantity: document.getElementById('map-select-quantity').value || null,
+        order_date: document.getElementById('map-select-order_date').value || null,
+        discount: document.getElementById('map-select-discount').value || null,
+        location: document.getElementById('map-select-location').value || null,
+        payment_type: document.getElementById('map-select-payment_type').value || null,
+        status: document.getElementById('map-select-status').value || null,
+      };
+
+      try {
+        const res = await apiFetch('/api/upload/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: stagedUploadData.fileName,
+            fileType: stagedUploadData.fileType,
+            rows: stagedUploadData.allRows,
+            columnMapping: confirmedMapping,
+          }),
+        });
+
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok) {
+          toast(data.error || 'Failed to save dataset.', 'error');
+          return;
+        }
+
+        toast(`✅ Successfully uploaded "${stagedUploadData.fileName}"!`, 'success');
+        closeUploadModal();
+
+        await loadDatasets();
+        refreshAllSections();
+      } catch (err) {
+        toast(`Save error: ${err.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirm & Save Dataset';
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // App Initialization
+    // ──────────────────────────────────────────────────────────
+    (async function init() {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+        const res = await fetch('/api/auth/user', {
+          credentials: 'include',
+          headers,
+        });
+
+        const data = await res.json();
+        if (data.authenticated) {
+          currentUser = data.user;
+          showApp();
+        } else {
+          showAuthScreen();
+        }
+      } catch {
+        showAuthScreen();
+      }
+    })();
+  </script>
+</body>
+</html>

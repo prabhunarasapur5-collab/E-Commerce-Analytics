@@ -1,0 +1,26 @@
+{
+  "name": "ecommerce-analytics",
+  "version": "1.0.0",
+  "description": "E-Commerce Sales & Customer Analytics System",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "setup": "node setup-db.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.4.0",
+    "mysql2": "^3.10.1",
+    "xlsx": "^0.18.5",
+    "zod": "^4.6.7"
+  }
+}
