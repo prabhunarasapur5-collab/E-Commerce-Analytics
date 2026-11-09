@@ -94,15 +94,31 @@ async function main() {
 
     console.log('  Tables created successfully.\n');
 
+    // Self-healing: Check columns of users table
+    const [userCols] = await conn.query('SHOW COLUMNS FROM users');
+    const uCols = new Set(userCols.map(c => c.Field.toLowerCase()));
+    if (uCols.has('name')) {
+      try {
+        await conn.query('ALTER TABLE users MODIFY COLUMN name VARCHAR(255) NULL DEFAULT NULL');
+      } catch (_) {}
+    }
+
     // Create default accounts if users table is empty
     const [userCount] = await conn.query('SELECT COUNT(*) as count FROM users');
     if (userCount[0].count === 0) {
       console.log('Creating initial admin account...');
       const adminHash = await bcrypt.hash('Admin@123', 10);
-      await conn.query(
-        'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
-        ['admin', 'admin@ecomanalytics.io', adminHash, 'admin']
-      );
+      if (uCols.has('name')) {
+        await conn.query(
+          'INSERT INTO users (username, name, email, password, role) VALUES (?, ?, ?, ?, ?)',
+          ['admin', 'Admin User', 'admin@ecomanalytics.io', adminHash, 'admin']
+        );
+      } else {
+        await conn.query(
+          'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
+          ['admin', 'admin@ecomanalytics.io', adminHash, 'admin']
+        );
+      }
       console.log('  Admin created: admin@ecomanalytics.io / Admin@123\n');
     }
 

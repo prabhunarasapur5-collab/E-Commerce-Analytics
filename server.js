@@ -99,6 +99,35 @@ async function initDatabase() {
       await conn.query('ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
     }
 
+    // Relax legacy `name` column if present (e.g. from existing/legacy schemas)
+    if (uCols.has('name')) {
+      console.log('  ⚠️ Relaxing legacy `name` column on users table to allow NULL/defaults...');
+      try {
+        await conn.query('ALTER TABLE users MODIFY COLUMN name VARCHAR(255) NULL DEFAULT NULL');
+      } catch (_) {
+        try {
+          await conn.query('ALTER TABLE users ALTER COLUMN name SET DEFAULT ""');
+        } catch (_) {}
+      }
+    }
+
+    // Inspect all other user columns to ensure no unmanaged NOT NULL column blocks inserts
+    for (const col of userCols) {
+      const field = col.Field.toLowerCase();
+      if (!['id', 'username', 'email', 'password', 'role', 'created_at'].includes(field)) {
+        if (col.Null === 'NO' && (col.Default === null || col.Default === undefined) && !col.Extra?.toLowerCase().includes('auto_increment')) {
+          console.log(`  ⚠️ Relaxing unmanaged column '${col.Field}' on users table to allow NULL...`);
+          try {
+            await conn.query(`ALTER TABLE users MODIFY COLUMN \`${col.Field}\` ${col.Type} NULL DEFAULT NULL`);
+          } catch (_) {
+            try {
+              await conn.query(`ALTER TABLE users ALTER COLUMN \`${col.Field}\` SET DEFAULT ''`);
+            } catch (_) {}
+          }
+        }
+      }
+    }
+
     // ────────────────────────────────────────────────────────
     // 2. Datasets Table Audit & Self-Healing
     // ────────────────────────────────────────────────────────
@@ -178,17 +207,33 @@ async function initDatabase() {
     // ────────────────────────────────────────────────────────
     const adminHash = await bcrypt.hash('Admin@123', 10);
     const [adminRows] = await conn.query('SELECT id FROM users WHERE email = ?', ['admin@ecomanalytics.io']);
+    const hasNameCol = uCols.has('name');
+
     if (adminRows.length === 0) {
-      await conn.query(
-        'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
-        ['admin', 'admin@ecomanalytics.io', adminHash, 'admin']
-      );
+      if (hasNameCol) {
+        await conn.query(
+          'INSERT INTO users (username, name, email, password, role) VALUES (?, ?, ?, ?, ?)',
+          ['admin', 'Admin User', 'admin@ecomanalytics.io', adminHash, 'admin']
+        );
+      } else {
+        await conn.query(
+          'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
+          ['admin', 'admin@ecomanalytics.io', adminHash, 'admin']
+        );
+      }
       console.log('  👑 Initial admin account created: admin@ecomanalytics.io / Admin@123');
     } else {
-      await conn.query(
-        'UPDATE users SET password = ?, username = COALESCE(NULLIF(username, ""), "admin"), role = "admin" WHERE email = ?',
-        [adminHash, 'admin@ecomanalytics.io']
-      );
+      if (hasNameCol) {
+        await conn.query(
+          'UPDATE users SET password = ?, username = COALESCE(NULLIF(username, ""), "admin"), name = COALESCE(NULLIF(name, ""), "Admin User"), role = "admin" WHERE email = ?',
+          [adminHash, 'admin@ecomanalytics.io']
+        );
+      } else {
+        await conn.query(
+          'UPDATE users SET password = ?, username = COALESCE(NULLIF(username, ""), "admin"), role = "admin" WHERE email = ?',
+          [adminHash, 'admin@ecomanalytics.io']
+        );
+      }
       console.log('  👑 Admin account credentials verified: admin@ecomanalytics.io / Admin@123');
     }
 
@@ -420,10 +465,22 @@ app.post('/api/auth/signup', async (req, res, next) => {
     }
 
     const hash = await bcrypt.hash(password, 10);
-    const [result] = await pool.query(
-      'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, "analyst")',
-      [username.trim(), email.toLowerCase().trim(), hash]
-    );
+    const [cols] = await pool.query('SHOW COLUMNS FROM users');
+    const colsSet = new Set(cols.map(c => c.Field.toLowerCase()));
+    let result;
+    if (colsSet.has('name')) {
+      const [res] = await pool.query(
+        'INSERT INTO users (username, name, email, password, role) VALUES (?, ?, ?, ?, "analyst")',
+        [username.trim(), username.trim(), email.toLowerCase().trim(), hash]
+      );
+      result = res;
+    } else {
+      const [res] = await pool.query(
+        'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, "analyst")',
+        [username.trim(), email.toLowerCase().trim(), hash]
+      );
+      result = res;
+    }
 
     const user = { id: result.insertId, username: username.trim(), email: email.toLowerCase().trim(), role: 'analyst' };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '7d' });
@@ -451,7 +508,7 @@ app.post('/api/auth/login', async (req, res, next) => {
     const { email, password } = parsed.data;
 
     const [rows] = await pool.query(
-      'SELECT id, username, email, password, role FROM users WHERE email = ?',
+      'SELECT * FROM users WHERE email = ?',
       [email.toLowerCase().trim()]
     );
 
@@ -467,7 +524,7 @@ app.post('/api/auth/login', async (req, res, next) => {
 
     const user = {
       id: userRow.id,
-      username: userRow.username || userRow.email.split('@')[0],
+      username: userRow.username || userRow.name || userRow.email.split('@')[0],
       email: userRow.email,
       role: userRow.role || 'analyst',
     };
