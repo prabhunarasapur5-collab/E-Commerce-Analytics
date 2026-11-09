@@ -12,6 +12,7 @@ const mysql = require('mysql2/promise');
 const multer = require('multer');
 const path = require('path');
 const { z } = require('zod');
+const analyticsEngine = require('./analytics-engine');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -201,6 +202,12 @@ async function initDatabase() {
     if (!rCols.has('location')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN location VARCHAR(255) NULL');
     if (!rCols.has('payment_type')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN payment_type VARCHAR(100) NULL');
     if (!rCols.has('status')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN status VARCHAR(100) NULL');
+    if (!rCols.has('order_id')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN order_id VARCHAR(255) NULL');
+    if (!rCols.has('product_id')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN product_id VARCHAR(255) NULL');
+    if (!rCols.has('gross_amount')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN gross_amount DECIMAL(14,2) NULL');
+    if (!rCols.has('discount_amount')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN discount_amount DECIMAL(14,2) NULL');
+    if (!rCols.has('net_amount')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN net_amount DECIMAL(14,2) NULL');
+    if (!rCols.has('normalized_status')) await conn.query('ALTER TABLE dataset_rows ADD COLUMN normalized_status VARCHAR(50) NULL');
 
     // ────────────────────────────────────────────────────────
     // 4. Guaranteed Demo Admin Provisioning & Password Sync
@@ -298,6 +305,11 @@ function requireAuth(req, res, next) {
   // 2. Cookie fallback
   if (!token && req.cookies && req.cookies.token) {
     token = req.cookies.token;
+  }
+
+  // 3. Query param fallback (e.g. direct browser download links)
+  if (!token && req.query && req.query.token) {
+    token = req.query.token;
   }
 
   if (!token) {
@@ -404,11 +416,13 @@ function normalizeDate(val) {
 // Auto-detect common column names
 function autoDetectMapping(headers) {
   const synonyms = {
+    order_id: ['order_id', 'orderid', 'order_number', 'ordernumber', 'invoice_id', 'invoiceid', 'invoice_no', 'invoiceno', 'order id', 'invoice id', 'order #', 'invoice #', 'order_no'],
     customer_id: ['customer_id', 'customerid', 'cust_id', 'custid', 'client_id', 'clientid', 'customer id', 'client id', 'buyer_id', 'user_id'],
     customer_name: ['customer_name', 'customername', 'customer', 'name', 'client_name', 'client', 'buyer', 'customer name', 'buyer name', 'full_name'],
-    product: ['product', 'product_name', 'productname', 'item', 'item_name', 'itemname', 'title', 'sku', 'product name', 'item name'],
+    product: ['product', 'product_name', 'productname', 'item', 'item_name', 'itemname', 'title', 'product name', 'item name'],
+    product_id: ['product_id', 'productid', 'item_id', 'itemid', 'sku', 'prod_id', 'product id', 'item id', 'sku_code', 'article_id'],
     category: ['category', 'cat', 'department', 'type', 'genre', 'product_category', 'category name', 'category_name'],
-    price: ['price', 'unit_price', 'unitprice', 'rate', 'unit_rate', 'amount', 'cost', 'unit price', 'selling_price'],
+    price: ['price', 'unit_price', 'unitprice', 'rate', 'unit_rate', 'amount', 'cost', 'unit price', 'selling_price', 'line_total', 'total_price'],
     quantity: ['quantity', 'qty', 'count', 'units', 'volume', 'qty_sold', 'quantity sold'],
     order_date: ['order_date', 'date', 'orderdate', 'transaction_date', 'created_at', 'timestamp', 'txn_date', 'order date', 'purchase date', 'invoice_date'],
     discount: ['discount', 'discount_pct', 'disc', 'discount_amount', 'discount percent', 'discount %', 'markdown'],
@@ -430,6 +444,30 @@ function autoDetectMapping(headers) {
         mapping[targetField] = lowerMap[syn];
         break;
       }
+    }
+  }
+
+  // Detect discount type: default percentage if header hints percentage, or fixed if hints amount
+  mapping.discount_type = 'percentage';
+  if (mapping.discount) {
+    const dLower = mapping.discount.toLowerCase();
+    if (dLower.includes('unit')) {
+      mapping.discount_type = 'fixed_unit';
+    } else if (dLower.includes('amt') || dLower.includes('amount') || dLower.includes('val') || dLower.includes('rs') || dLower.includes('inr')) {
+      mapping.discount_type = 'fixed_total';
+    } else {
+      mapping.discount_type = 'percentage';
+    }
+  }
+
+  // Detect price type: default unit_price unless header specifies line total
+  mapping.price_type = 'unit_price';
+  if (mapping.price) {
+    const pLower = mapping.price.toLowerCase();
+    if (pLower.includes('line_total') || pLower.includes('linetotal') || pLower.includes('extended') || pLower.includes('total_price')) {
+      mapping.price_type = 'line_total';
+    } else {
+      mapping.price_type = 'unit_price';
     }
   }
 
@@ -742,6 +780,7 @@ app.post('/api/upload/preview', requireAuth, upload.single('file'), async (req, 
     }
 
     const suggestedMapping = autoDetectMapping(parsedHeaders);
+    const qualityAudit = analyticsEngine.auditDatasetQuality(parsedRows, suggestedMapping);
     const previewRows = parsedRows.slice(0, 10);
 
     return res.json({
@@ -750,6 +789,7 @@ app.post('/api/upload/preview', requireAuth, upload.single('file'), async (req, 
       totalRows: parsedRows.length,
       headers: parsedHeaders,
       suggestedMapping,
+      qualityAudit,
       previewRows,
       allRows: parsedRows, // Pass to client to confirm mapping before saving
     });
@@ -766,7 +806,7 @@ app.post('/api/upload/confirm', requireAuth, async (req, res, next) => {
       fileName: z.string().min(1),
       fileType: z.string().min(1),
       rows: z.array(z.record(z.any())).min(1, 'At least 1 row required'),
-      columnMapping: z.record(z.string().nullable().optional()),
+      columnMapping: z.record(z.any()),
     });
 
     const parsed = confirmSchema.safeParse(req.body);
@@ -805,18 +845,19 @@ app.post('/api/upload/confirm', requireAuth, async (req, res, next) => {
         const custId = getVal('customer_id') !== null ? String(getVal('customer_id')).trim() : null;
         const custName = getVal('customer_name') !== null ? String(getVal('customer_name')).trim() : null;
         const prod = getVal('product') !== null ? String(getVal('product')).trim() : null;
+        const prodId = getVal('product_id') !== null ? String(getVal('product_id')).trim() : null;
+        const orderId = getVal('order_id') !== null ? String(getVal('order_id')).trim() : null;
         const cat = getVal('category') !== null ? String(getVal('category')).trim() : null;
-        const priceRaw = getVal('price');
-        const price = (priceRaw !== null && !isNaN(parseFloat(priceRaw))) ? parseFloat(priceRaw) : null;
-        const qtyRaw = getVal('quantity');
-        const quantity = (qtyRaw !== null && !isNaN(parseInt(qtyRaw, 10))) ? parseInt(qtyRaw, 10) : (price !== null ? 1 : null);
         const dateRaw = getVal('order_date');
-        const orderDate = normalizeDate(dateRaw);
+        const orderDate = analyticsEngine.normalizeDateStr(dateRaw);
         const discRaw = getVal('discount');
-        const discount = (discRaw !== null && !isNaN(parseFloat(discRaw))) ? parseFloat(discRaw) : null;
+        const discount = analyticsEngine.parseStrictNumber(discRaw);
         const loc = getVal('location') !== null ? String(getVal('location')).trim() : null;
         const pay = getVal('payment_type') !== null ? String(getVal('payment_type')).trim() : null;
         const stat = getVal('status') !== null ? String(getVal('status')).trim() : null;
+
+        // Accurate financials calculated from central engine
+        const fin = analyticsEngine.calculateRowFinancials(row, columnMapping);
 
         return [
           datasetId,
@@ -827,20 +868,27 @@ app.post('/api/upload/confirm', requireAuth, async (req, res, next) => {
           custName,
           prod,
           cat,
-          price,
-          quantity,
+          fin.unit_price,
+          fin.quantity,
           orderDate,
           discount,
           loc,
           pay,
           stat,
+          orderId,
+          prodId,
+          fin.gross_amount,
+          fin.discount_amount,
+          fin.net_amount,
+          fin.normalized_status,
         ];
       });
 
       await conn.query(
         `INSERT INTO dataset_rows (
           dataset_id, user_id, \`row_number\`, raw_data,
-          customer_id, customer_name, product, category, price, quantity, order_date, discount, location, payment_type, status
+          customer_id, customer_name, product, category, price, quantity, order_date, discount, location, payment_type, status,
+          order_id, product_id, gross_amount, discount_amount, net_amount, normalized_status
         ) VALUES ?`,
         [values]
       );
@@ -875,182 +923,85 @@ app.get('/api/analytics/summary', requireAuth, async (req, res, next) => {
     }
 
     const mapping = activeDs.column_mapping || {};
-    const hasPrice = !!mapping.price;
-    const hasDate = !!mapping.order_date;
-    const hasCategory = !!mapping.category;
-    const hasProduct = !!mapping.product;
-    const hasLocation = !!mapping.location;
-    const hasPayment = !!mapping.payment_type;
-    const hasStatus = !!mapping.status;
-    const hasCustomer = !!(mapping.customer_id || mapping.customer_name);
+    const availableFields = {
+      hasDate: !!mapping.order_date,
+      hasPrice: !!mapping.price,
+      hasCategory: !!mapping.category,
+      hasProduct: !!(mapping.product || mapping.product_id),
+      hasLocation: !!mapping.location,
+      hasPayment: !!mapping.payment_type,
+      hasStatus: !!mapping.status,
+      hasCustomer: !!(mapping.customer_id || mapping.customer_name),
+      hasOrderId: !!mapping.order_id,
+      hasDiscount: !!mapping.discount,
+    };
 
-    // Total rows/orders
-    const [totalRows] = await pool.query(
-      'SELECT COUNT(*) as total_orders FROM dataset_rows WHERE dataset_id = ? AND user_id = ?',
+    const [rows] = await pool.query(
+      `SELECT row_number, raw_data, customer_id, customer_name, product, category,
+              price, quantity, order_date, discount, location, payment_type, status,
+              order_id, product_id, gross_amount, discount_amount, net_amount, normalized_status
+       FROM dataset_rows
+       WHERE dataset_id = ? AND user_id = ?
+       ORDER BY row_number ASC`,
       [activeDs.id, req.user.id]
     );
-    const totalOrders = totalRows[0]?.total_orders || 0;
 
-    let grossSales = 0;
-    let avgOrderValue = 0;
-    let totalDiscounts = 0;
-    let returnRate = null;
-
-    if (hasPrice) {
-      const [revRows] = await pool.query(
-        `SELECT 
-          SUM(COALESCE(price, 0) * COALESCE(quantity, 1)) as gross_sales,
-          AVG(COALESCE(price, 0) * COALESCE(quantity, 1)) as avg_order_value,
-          SUM(COALESCE(discount, 0)) as total_discounts
-         FROM dataset_rows 
-         WHERE dataset_id = ? AND user_id = ?`,
-        [activeDs.id, req.user.id]
-      );
-      grossSales = parseFloat(revRows[0]?.gross_sales || 0);
-      avgOrderValue = parseFloat(revRows[0]?.avg_order_value || 0);
-      totalDiscounts = parseFloat(revRows[0]?.total_discounts || 0);
-    }
-
-    if (hasStatus) {
-      const [statusRows] = await pool.query(
-        `SELECT 
-          COUNT(*) as total,
-          COUNT(CASE WHEN LOWER(COALESCE(status, '')) LIKE '%return%' THEN 1 END) as returns
-         FROM dataset_rows 
-         WHERE dataset_id = ? AND user_id = ?`,
-        [activeDs.id, req.user.id]
-      );
-      const total = statusRows[0]?.total || 0;
-      const rets = statusRows[0]?.returns || 0;
-      returnRate = total > 0 ? parseFloat(((rets / total) * 100).toFixed(1)) : 0;
-    }
-
-    // Monthly trend
-    let monthlyTrend = [];
-    if (hasDate) {
-      const [trendRows] = await pool.query(
-        `SELECT 
-          DATE_FORMAT(order_date, '%Y-%m') as month,
-          COUNT(*) as orders,
-          ${hasPrice ? 'SUM(COALESCE(price, 0) * COALESCE(quantity, 1))' : '0'} as revenue
-         FROM dataset_rows 
-         WHERE dataset_id = ? AND user_id = ? AND order_date IS NOT NULL
-         GROUP BY month 
-         ORDER BY month ASC LIMIT 24`,
-        [activeDs.id, req.user.id]
-      );
-      monthlyTrend = trendRows.map(r => ({
-        month: r.month,
-        orders: r.orders,
-        revenue: parseFloat(r.revenue || 0),
-      }));
-    }
-
-    // Category breakdown
-    let categoryPerformance = [];
-    if (hasCategory) {
-      const [catRows] = await pool.query(
-        `SELECT 
-          category,
-          COUNT(*) as orders,
-          ${hasPrice ? 'SUM(COALESCE(price, 0) * COALESCE(quantity, 1))' : '0'} as revenue
-         FROM dataset_rows 
-         WHERE dataset_id = ? AND user_id = ? AND category IS NOT NULL AND category != ''
-         GROUP BY category 
-         ORDER BY ${hasPrice ? 'revenue' : 'orders'} DESC LIMIT 10`,
-        [activeDs.id, req.user.id]
-      );
-      categoryPerformance = catRows.map(r => ({
-        category: r.category,
-        orders: r.orders,
-        revenue: parseFloat(r.revenue || 0),
-      }));
-    }
-
-    // Top products
-    let topProducts = [];
-    if (hasProduct) {
-      const [prodRows] = await pool.query(
-        `SELECT 
-          product,
-          ${hasCategory ? 'MAX(category)' : 'NULL'} as category,
-          COUNT(*) as orders,
-          ${hasPrice ? 'SUM(COALESCE(price, 0) * COALESCE(quantity, 1))' : '0'} as revenue
-         FROM dataset_rows 
-         WHERE dataset_id = ? AND user_id = ? AND product IS NOT NULL AND product != ''
-         GROUP BY product 
-         ORDER BY ${hasPrice ? 'revenue' : 'orders'} DESC LIMIT 5`,
-        [activeDs.id, req.user.id]
-      );
-      topProducts = prodRows.map(r => ({
+    const parsedRows = rows.map(r => {
+      let rawObj = {};
+      try {
+        rawObj = typeof r.raw_data === 'string' ? JSON.parse(r.raw_data) : (r.raw_data || {});
+      } catch (_) {}
+      return {
+        ...rawObj,
+        customer_id: r.customer_id,
+        customer_name: r.customer_name,
         product: r.product,
-        category: r.category || '—',
-        orders: r.orders,
-        revenue: parseFloat(r.revenue || 0),
-      }));
-    }
-
-    // Location breakdown
-    let locationBreakdown = [];
-    if (hasLocation) {
-      const [locRows] = await pool.query(
-        `SELECT 
-          location,
-          COUNT(*) as orders,
-          ${hasPrice ? 'SUM(COALESCE(price, 0) * COALESCE(quantity, 1))' : '0'} as revenue
-         FROM dataset_rows 
-         WHERE dataset_id = ? AND user_id = ? AND location IS NOT NULL AND location != ''
-         GROUP BY location 
-         ORDER BY ${hasPrice ? 'revenue' : 'orders'} DESC LIMIT 8`,
-        [activeDs.id, req.user.id]
-      );
-      locationBreakdown = locRows.map(r => ({
+        product_id: r.product_id,
+        order_id: r.order_id,
+        category: r.category,
+        price: r.price,
+        quantity: r.quantity,
+        order_date: r.order_date,
+        discount: r.discount,
         location: r.location,
-        orders: r.orders,
-        revenue: parseFloat(r.revenue || 0),
-      }));
-    }
-
-    // Payment breakdown
-    let paymentBreakdown = [];
-    if (hasPayment) {
-      const [payRows] = await pool.query(
-        `SELECT 
-          payment_type,
-          COUNT(*) as count,
-          ${hasPrice ? 'SUM(COALESCE(price, 0) * COALESCE(quantity, 1))' : '0'} as revenue
-         FROM dataset_rows 
-         WHERE dataset_id = ? AND user_id = ? AND payment_type IS NOT NULL AND payment_type != ''
-         GROUP BY payment_type 
-         ORDER BY count DESC`,
-        [activeDs.id, req.user.id]
-      );
-      paymentBreakdown = payRows.map(r => ({
         payment_type: r.payment_type,
-        count: r.count,
-        revenue: parseFloat(r.revenue || 0),
-      }));
-    }
+        status: r.status,
+      };
+    });
+
+    const kpis = analyticsEngine.computeSummaryKPIs(parsedRows, mapping);
+    const monthlyTrend = analyticsEngine.computeMonthlyTrends(parsedRows, mapping);
+    const categoryPerformance = analyticsEngine.computeCategoryPerformance(parsedRows, mapping);
+    const topProducts = analyticsEngine.computeTopProducts(parsedRows, mapping);
+    const locationBreakdown = analyticsEngine.computeLocationBreakdown(parsedRows, mapping);
+    const paymentBreakdown = analyticsEngine.computePaymentBreakdown(parsedRows, mapping);
 
     return res.json({
       hasDataset: true,
       dataset: activeDs,
-      availableFields: {
-        hasDate,
-        hasPrice,
-        hasCategory,
-        hasProduct,
-        hasLocation,
-        hasPayment,
-        hasStatus,
-        hasCustomer,
-      },
+      availableFields,
       metrics: {
-        total_orders: totalOrders,
-        gross_sales: grossSales.toFixed(2),
-        avg_order_value: avgOrderValue.toFixed(2),
-        total_discounts: totalDiscounts.toFixed(2),
-        return_rate: returnRate,
+        // High-accuracy financial & order metrics (Parts 1, 2, 3)
+        total_records: kpis.total_records,
+        completed_transactions: kpis.completed_transactions,
+        unique_completed_orders: kpis.unique_completed_orders,
+        has_order_id: kpis.has_order_id,
+        gross_transaction_value: kpis.gross_transaction_value.toFixed(2),
+        completed_gross_sales: kpis.completed_gross_sales.toFixed(2),
+        completed_discount_amount: kpis.completed_discount_amount.toFixed(2),
+        completed_net_sales: kpis.completed_net_sales.toFixed(2),
+        total_discounts_all: kpis.total_discounts_all.toFixed(2),
+        returned_gross_value: kpis.returned_gross_value.toFixed(2),
+        cancelled_gross_value: kpis.cancelled_gross_value.toFixed(2),
+        return_rate: kpis.return_rate,
+        average_order_value: kpis.average_order_value !== null ? kpis.average_order_value.toFixed(2) : null,
+        average_transaction_value: kpis.average_transaction_value.toFixed(2),
+
+        // Backward-compatible properties
+        total_orders: kpis.has_order_id && kpis.unique_completed_orders !== null ? kpis.unique_completed_orders : kpis.completed_transactions,
+        gross_sales: kpis.completed_net_sales.toFixed(2),
+        avg_order_value: (kpis.average_order_value !== null ? kpis.average_order_value : kpis.average_transaction_value).toFixed(2),
+        total_discounts: kpis.completed_discount_amount.toFixed(2),
       },
       monthlyTrend,
       categoryPerformance,
@@ -1084,88 +1035,50 @@ app.get('/api/analytics/customers', requireAuth, async (req, res, next) => {
       });
     }
 
-    const hasPrice = !!mapping.price;
-    const hasDate = !!mapping.order_date;
-
-    const groupField = hasCustId && hasCustName
-      ? 'COALESCE(customer_id, customer_name)'
-      : (hasCustId ? 'customer_id' : 'customer_name');
-
     const [rows] = await pool.query(
-      `SELECT 
-        ${hasCustId ? 'MAX(customer_id)' : 'NULL'} as customer_id,
-        ${hasCustName ? 'MAX(customer_name)' : 'NULL'} as customer_name,
-        MAX(${groupField}) as display_id,
-        COUNT(*) as total_orders,
-        ${hasPrice ? 'SUM(COALESCE(price, 0) * COALESCE(quantity, 1))' : '0'} as total_spent,
-        ${hasDate ? 'MAX(order_date)' : 'NULL'} as last_order_date,
-        ${hasDate ? 'DATEDIFF(CURDATE(), MAX(order_date))' : 'NULL'} as days_since_last_order
+      `SELECT row_number, raw_data, customer_id, customer_name, product, category,
+              price, quantity, order_date, discount, location, payment_type, status,
+              order_id, product_id, gross_amount, discount_amount, net_amount, normalized_status
        FROM dataset_rows
-       WHERE dataset_id = ? AND user_id = ? AND ${groupField} IS NOT NULL AND ${groupField} != ''
-       GROUP BY ${groupField}`,
+       WHERE dataset_id = ? AND user_id = ?
+       ORDER BY row_number ASC`,
       [activeDs.id, req.user.id]
     );
 
-    if (rows.length === 0) {
-      return res.json({
-        hasDataset: true,
-        hasCustomerData: true,
-        dataset: activeDs,
-        customers: [],
-      });
-    }
-
-    // Calculate spend threshold
-    const spends = rows.map(r => parseFloat(r.total_spent || 0));
-    const avgSpend = spends.reduce((a, b) => a + b, 0) / (spends.length || 1);
-    const highSpendThreshold = Math.max(avgSpend * 1.4, 100);
-
-    const customers = rows.map(r => {
-      const orders = parseInt(r.total_orders, 10);
-      const spent = parseFloat(r.total_spent || 0);
-      const recency = r.days_since_last_order !== null ? parseInt(r.days_since_last_order, 10) : null;
-
-      let segment = 'Occasional';
-      let justification = '';
-
-      if (hasPrice && spent >= highSpendThreshold && orders >= 3) {
-        segment = 'High-Value';
-        justification = `Top-tier spending of ₹${spent.toLocaleString('en-IN', { maximumFractionDigits: 0 })} across ${orders} orders`;
-      } else if (orders >= 3 && (recency === null || recency <= 120)) {
-        segment = 'Frequent';
-        justification = `${orders} purchases recorded recently`;
-      } else if (recency !== null && recency > 180 && orders >= 1) {
-        segment = 'Inactive';
-        justification = `No recent purchase for over ${recency} days`;
-      } else {
-        segment = 'Occasional';
-        justification = `${orders} order(s) totaling ₹${spent.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
-      }
-
-      // Rank score
-      const rankScore = (spent * 0.6) + (orders * 500) + (recency !== null ? Math.max(0, 365 - recency) * 10 : 0);
-
+    const parsedRows = rows.map(r => {
+      let rawObj = {};
+      try {
+        rawObj = typeof r.raw_data === 'string' ? JSON.parse(r.raw_data) : (r.raw_data || {});
+      } catch (_) {}
       return {
+        ...rawObj,
         customer_id: r.customer_id,
-        customer_name: r.customer_name || r.customer_id,
-        total_orders: orders,
-        total_spent: spent.toFixed(2),
-        last_order_date: r.last_order_date,
-        days_since_last_order: recency,
-        segment,
-        justification,
-        rank_score: rankScore,
+        customer_name: r.customer_name,
+        product: r.product,
+        product_id: r.product_id,
+        order_id: r.order_id,
+        category: r.category,
+        price: r.price,
+        quantity: r.quantity,
+        order_date: r.order_date,
+        discount: r.discount,
+        location: r.location,
+        payment_type: r.payment_type,
+        status: r.status,
       };
     });
 
-    customers.sort((a, b) => b.rank_score - a.rank_score);
-    customers.forEach((c, idx) => { c.rank = idx + 1; });
+    const refDate = req.query.referenceDate || req.query.refDate || 'latest';
+    const result = analyticsEngine.computeCustomerMetrics(parsedRows, mapping, refDate);
 
     return res.json({
       hasDataset: true,
       hasCustomerData: true,
       dataset: activeDs,
-      customers,
+      customers: result.customers,
+      referenceDate: result.referenceDate,
+      maxDatasetDate: result.maxDatasetDate,
+      dateType: result.dateType,
     });
   } catch (err) {
     next(err);

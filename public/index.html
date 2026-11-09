@@ -540,6 +540,28 @@
                   <!-- Populated via JS -->
                 </div>
 
+                <!-- Reference Date Control Bar (Part 4) -->
+                <div class="glass rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-between border border-slate-800 text-xs">
+                  <div class="flex items-center gap-2">
+                    <span class="text-slate-400 font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                      <span>📅</span> Reference Date:
+                    </span>
+                    <select id="customer-ref-date-mode" onchange="onCustomerRefDateModeChanged()"
+                            class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-brand-300 font-mono focus:outline-none focus:border-brand-500">
+                      <option value="latest">Latest Dataset Date (Recommended for Historical Data)</option>
+                      <option value="current">Current System Date (Today)</option>
+                      <option value="custom">Custom Reference Date…</option>
+                    </select>
+                    <input id="customer-custom-date-input" type="date" onchange="loadCustomers()"
+                           class="hidden bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-brand-500" />
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span id="customer-active-ref-date-display" class="font-mono text-[11px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
+                      Calculating reference date…
+                    </span>
+                  </div>
+                </div>
+
                 <!-- Customer Search & Filter Bar -->
                 <div class="glass rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-between border border-slate-800">
                   <div class="relative flex-1 min-w-[200px]">
@@ -566,11 +588,11 @@
                         <tr>
                           <th class="py-3 px-4">Rank</th>
                           <th class="py-3 px-4">Customer ID / Name</th>
-                          <th class="py-3 px-4 text-center">Orders</th>
-                          <th class="py-3 px-4 text-right">Total Spent (₹)</th>
-                          <th class="py-3 px-4 text-center">Last Order Date</th>
+                          <th class="py-3 px-4 text-center">Completed Orders</th>
+                          <th class="py-3 px-4 text-right">Completed Net Spend (₹)</th>
+                          <th class="py-3 px-4 text-center">Last Order (Recency)</th>
                           <th class="py-3 px-4">Segment</th>
-                          <th class="py-3 px-4">Why this segment?</th>
+                          <th class="py-3 px-4">Classification Criteria</th>
                         </tr>
                       </thead>
                       <tbody id="customer-table-tbody" class="divide-y divide-slate-800/60"></tbody>
@@ -613,10 +635,10 @@
                 
                 <div class="flex items-center gap-2">
                   <span id="explorer-row-stats" class="text-xs text-slate-400 font-mono"></span>
-                  <a href="/api/transactions/export" download="dataset_export.csv"
+                  <button onclick="exportCsv()"
                      class="px-3.5 py-2 rounded-xl text-xs font-semibold glass border border-slate-700/80 hover:border-slate-500 text-slate-200 flex items-center gap-1.5 transition-colors">
                     <span>📥</span> Export CSV
-                  </a>
+                  </button>
                 </div>
               </div>
 
@@ -704,6 +726,38 @@
             <button onclick="resetUploadModal()" class="text-xs text-slate-400 hover:text-white underline">
               Choose different file
             </button>
+          </div>
+
+          <!-- Data Quality Warnings Callout -->
+          <div id="upload-quality-warnings" class="hidden p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs">
+            <div class="font-bold flex items-center gap-1.5 mb-1.5 text-amber-300">
+              <span>⚠️</span> Data Quality & Accuracy Audit
+            </div>
+            <ul id="upload-quality-warnings-list" class="list-disc list-inside space-y-1 text-[11px] text-amber-300/90"></ul>
+          </div>
+
+          <!-- Financial Calculation Interpretation Controls -->
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Financial Calculation Settings</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Price Column Meaning</label>
+                <select id="map-select-price_type" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                  <option value="unit_price">Unit Price (Calculates Line Gross = Price × Quantity)</option>
+                  <option value="line_total">Line Total (Uploaded Price is already Total Amount)</option>
+                </select>
+                <p class="text-[10px] text-slate-500 mt-1">Specify whether your price column represents single-unit rate or total line value.</p>
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Discount Column Format</label>
+                <select id="map-select-discount_type" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                  <option value="percentage">Percentage (%) — Rate from 0 to 100%</option>
+                  <option value="fixed_total">Fixed Amount (₹) — Monetary discount per line item</option>
+                  <option value="fixed_unit">Fixed Amount per Unit (₹) — Multiplied by Quantity</option>
+                </select>
+                <p class="text-[10px] text-slate-500 mt-1">Converts discounts to actual rupees, avoiding raw percentage summation.</p>
+              </div>
+            </div>
           </div>
 
           <!-- Column Mapping Section -->
@@ -821,6 +875,16 @@
         t.classList.add('opacity-0', 'translate-y-2');
         setTimeout(() => t.remove(), 300);
       }, 3500);
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
     // ──────────────────────────────────────────────────────────
@@ -1128,64 +1192,101 @@
       const container = document.getElementById('summary-kpis');
       const cards = [];
 
-      // Total orders (always available)
+      // 1. Completed Orders / Transactions (Part 1.3 & Part 3.2)
+      const isOrderLevel = !!m.has_order_id;
+      const countVal = isOrderLevel && m.unique_completed_orders !== null ? m.unique_completed_orders : (m.completed_transactions || m.total_orders);
       cards.push({
-        label: 'Total Orders',
-        value: parseInt(m.total_orders).toLocaleString(),
-        sub: 'Total rows in file',
+        label: isOrderLevel ? 'Completed Orders' : 'Completed Transactions',
+        value: parseInt(countVal || 0).toLocaleString(),
+        sub: isOrderLevel ? 'Unique fulfilled orders (excl. returns)' : 'Fulfilled line items (No Order ID mapped)',
         icon: '📦',
-        color: '#4f46e5'
+        color: '#4f46e5',
+        badge: isOrderLevel ? 'Verified Orders' : 'Transaction Level',
       });
 
-      // Gross Sales (only if price mapped)
+      // 2. Completed Net Sales (Part 1.2 D)
       if (fields.hasPrice) {
         cards.push({
-          label: 'Total Revenue',
-          value: `₹${parseFloat(m.gross_sales).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
-          sub: 'Gross transaction value',
+          label: 'Completed Net Sales',
+          value: `₹${parseFloat(m.completed_net_sales || m.gross_sales || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+          sub: 'Fulfilled sales after discounts',
           icon: '💰',
-          color: '#10b981'
+          color: '#10b981',
+          badge: 'Net Revenue',
         });
 
+        // 3. Completed Gross Sales (Part 1.2 B & A)
         cards.push({
-          label: 'Avg Order Value',
-          value: `₹${parseFloat(m.avg_order_value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
-          sub: 'Average order size',
-          icon: '📈',
-          color: '#8b5cf6'
+          label: 'Completed Gross Sales',
+          value: `₹${parseFloat(m.completed_gross_sales || m.gross_sales || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+          sub: `GTV (All records): ₹${parseFloat(m.gross_transaction_value || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+          icon: '📊',
+          color: '#3b82f6',
+          badge: 'Pre-Discount',
         });
-      }
 
-      // Total Discounts (only if discount mapped)
-      if (fields.hasPrice && parseFloat(m.total_discounts) > 0) {
+        // 4. Total Discounts Applied (Part 1.2 C & Part 2)
         cards.push({
-          label: 'Total Discounts',
-          value: `₹${parseFloat(m.total_discounts).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
-          sub: 'Recorded price markdowns',
+          label: 'Discounts Applied',
+          value: `₹${parseFloat(m.completed_discount_amount || m.total_discounts || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+          sub: `Total discounts (all): ₹${parseFloat(m.total_discounts_all || m.completed_discount_amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
           icon: '🏷️',
-          color: '#f59e0b'
+          color: '#f59e0b',
+          badge: 'Actual ₹',
+        });
+
+        // 5. AOV or ATV (Part 3.3)
+        const isAOV = isOrderLevel && m.average_order_value !== null;
+        const avgVal = isAOV ? m.average_order_value : (m.average_transaction_value || m.avg_order_value || 0);
+        cards.push({
+          label: isAOV ? 'Average Order Value' : 'Avg Transaction Value',
+          value: `₹${parseFloat(avgVal || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+          sub: isAOV ? 'Net sales / unique completed orders' : 'Per transaction line (No Order ID)',
+          icon: '📈',
+          color: '#8b5cf6',
+          badge: isAOV ? 'Order AOV' : 'Line ATV',
         });
       }
 
-      // Return Rate (only if status mapped)
+      // 6. Returns & Cancellations (Part 1.2 E & F)
+      if (fields.hasStatus && (parseFloat(m.returned_gross_value || 0) > 0 || parseFloat(m.cancelled_gross_value || 0) > 0)) {
+        const retVal = parseFloat(m.returned_gross_value || 0);
+        const canVal = parseFloat(m.cancelled_gross_value || 0);
+        cards.push({
+          label: 'Returns & Cancellations',
+          value: `₹${(retVal + canVal).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+          sub: `Ret: ₹${retVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })} | Can: ₹${canVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+          icon: '↩️',
+          color: '#ef4444',
+          badge: 'Unrealized',
+        });
+      }
+
+      // 7. Return Rate (Part 1.3)
       if (fields.hasStatus && m.return_rate !== null) {
         cards.push({
           label: 'Return Rate',
           value: `${m.return_rate}%`,
-          sub: 'Returned status share',
-          icon: '↩️',
-          color: '#ef4444'
+          sub: 'Returned / Fulfilled orders',
+          icon: '📉',
+          color: '#f43f5e',
+          badge: 'Fulfilled %',
         });
       }
 
+      container.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4';
+
       container.innerHTML = cards.map(c => `
-        <div class="glass rounded-2xl p-4 border border-slate-800 flex flex-col justify-between">
+        <div class="glass rounded-2xl p-4 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition-all">
           <div class="flex items-center justify-between mb-2">
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">${c.label}</span>
             <span class="w-7 h-7 rounded-lg flex items-center justify-center text-sm" style="background:${c.color}20">${c.icon}</span>
           </div>
-          <p class="text-xl font-extrabold text-white">${c.value}</p>
-          <p class="text-[10px] text-slate-500 mt-1">${c.sub}</p>
+          <div>
+            <p class="text-xl font-extrabold text-white">${c.value}</p>
+            <p class="text-[10px] text-slate-500 mt-1">${c.sub}</p>
+          </div>
+          ${c.badge ? `<div class="mt-2"><span class="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-400 border border-slate-700/60">${c.badge}</span></div>` : ''}
         </div>
       `).join('');
     }
@@ -1212,35 +1313,89 @@
     function renderSummaryCharts(data) {
       const { availableFields, monthlyTrend, categoryPerformance, locationBreakdown, paymentBreakdown, topProducts } = data;
 
-      // 1. Monthly Trend
+      // 1. Monthly Trend (Dual-Axis: Completed Net Sales & Order/Transaction Count)
       const cardMonthly = document.getElementById('card-chart-monthly');
       if (availableFields.hasDate && monthlyTrend.length > 0) {
         cardMonthly.classList.remove('hidden');
         if (chartMonthly) chartMonthly.destroy();
         const ctx = document.getElementById('chart-monthly').getContext('2d');
+        const countLabel = (monthlyTrend[0] && monthlyTrend[0].count_type === 'orders') ? 'Completed Orders' : 'Completed Transactions';
+
         chartMonthly = new Chart(ctx, {
           type: 'line',
           data: {
             labels: monthlyTrend.map(r => r.month),
             datasets: [
               {
-                label: availableFields.hasPrice ? 'Revenue (₹)' : 'Orders',
-                data: monthlyTrend.map(r => availableFields.hasPrice ? r.revenue : r.orders),
+                label: 'Completed Net Sales (₹)',
+                data: monthlyTrend.map(r => r.revenue),
                 borderColor: '#6366f1',
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                backgroundColor: 'rgba(99, 102, 241, 0.12)',
                 fill: true,
                 tension: 0.35,
+                borderWidth: 2.5,
+                yAxisID: 'y',
+              },
+              {
+                label: countLabel,
+                data: monthlyTrend.map(r => r.count),
+                borderColor: '#10b981',
+                backgroundColor: 'transparent',
+                borderDash: [4, 4],
+                tension: 0.35,
                 borderWidth: 2,
+                yAxisID: 'y1',
               }
             ]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 12 }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) {
+                    if (ctx.datasetIndex === 0) {
+                      return ` Net Sales: ₹${Number(ctx.raw).toLocaleString('en-IN')}`;
+                    }
+                    return ` ${ctx.dataset.label}: ${ctx.raw}`;
+                  }
+                }
+              }
+            },
             scales: {
-              x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-              y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+              x: {
+                grid: { color: 'rgba(255,255,255,0.05)' },
+                ticks: { color: '#94a3b8', font: { size: 10 } }
+              },
+              y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                grid: { color: 'rgba(255,255,255,0.05)' },
+                ticks: {
+                  color: '#94a3b8',
+                  font: { size: 10 },
+                  callback: v => `₹${Number(v).toLocaleString('en-IN')}`
+                }
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                grid: { drawOnChartArea: false },
+                ticks: {
+                  color: '#10b981',
+                  font: { size: 10 },
+                  precision: 0
+                }
+              }
             }
           }
         });
@@ -1342,10 +1497,13 @@
         document.getElementById('top-products-tbody').innerHTML = topProducts.map((p, idx) => `
           <tr class="hover:bg-slate-800/40">
             <td class="py-2.5 px-3 font-mono text-slate-500">${idx + 1}</td>
-            <td class="py-2.5 px-3 font-semibold text-white">${p.product}</td>
-            <td class="py-2.5 px-3 text-slate-400">${p.category}</td>
+            <td class="py-2.5 px-3 font-semibold text-white">
+              ${escapeHtml(p.product)}
+              ${p.product_id && p.product_id !== p.product ? `<span class="ml-1 text-[10px] font-mono text-slate-400 font-normal">(${escapeHtml(p.product_id)})</span>` : ''}
+            </td>
+            <td class="py-2.5 px-3 text-slate-400">${escapeHtml(p.category)}</td>
             <td class="py-2.5 px-3 text-right font-mono text-slate-300">${p.orders}</td>
-            <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">₹${p.revenue.toLocaleString()}</td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">₹${p.revenue.toLocaleString('en-IN')}</td>
           </tr>
         `).join('');
       } else {
@@ -1356,12 +1514,37 @@
     // ──────────────────────────────────────────────────────────
     // SECTION 2: CUSTOMER SEGMENTS LOGIC
     // ──────────────────────────────────────────────────────────
+    function onCustomerRefDateModeChanged() {
+      const mode = document.getElementById('customer-ref-date-mode')?.value || 'latest';
+      const customInput = document.getElementById('customer-custom-date-input');
+      if (customInput) {
+        if (mode === 'custom') {
+          customInput.classList.remove('hidden');
+          if (!customInput.value) {
+            customInput.value = new Date().toISOString().split('T')[0];
+          }
+        } else {
+          customInput.classList.add('hidden');
+        }
+      }
+      loadCustomers();
+    }
+
     async function loadCustomers() {
       const emptyEl = document.getElementById('empty-state-customers');
       const contentEl = document.getElementById('content-customers');
 
       try {
-        const res = await apiFetch('/api/analytics/customers');
+        const mode = document.getElementById('customer-ref-date-mode')?.value || 'latest';
+        const customDate = document.getElementById('customer-custom-date-input')?.value;
+        let url = '/api/analytics/customers';
+        if (mode === 'custom' && customDate) {
+          url += `?referenceDate=${encodeURIComponent(customDate)}`;
+        } else {
+          url += `?referenceDate=${encodeURIComponent(mode)}`;
+        }
+
+        const res = await apiFetch(url);
         if (!res) return;
         const data = await res.json();
 
@@ -1373,6 +1556,13 @@
 
         emptyEl.classList.add('hidden');
         contentEl.classList.remove('hidden');
+
+        // Update active reference date badge
+        const refDisplay = document.getElementById('customer-active-ref-date-display');
+        if (refDisplay && data.referenceDate) {
+          const modeLabel = data.dateType === 'latest' ? 'Dataset Max' : (data.dateType === 'current' ? 'Today' : 'Custom');
+          refDisplay.textContent = `Active Reference Date: ${data.referenceDate} (${modeLabel})`;
+        }
 
         // Check if customer column exists
         const noColAlert = document.getElementById('no-customer-col-alert');
@@ -1448,14 +1638,17 @@
         <tr class="hover:bg-slate-800/40">
           <td class="py-3 px-4 font-mono text-brand-400 font-bold">#${c.rank}</td>
           <td class="py-3 px-4">
-            <div class="font-bold text-white">${c.customer_name || c.customer_id || '—'}</div>
-            ${c.customer_id && c.customer_name ? `<div class="font-mono text-[10px] text-slate-500">ID: ${c.customer_id}</div>` : ''}
+            <div class="font-bold text-white">${escapeHtml(c.customer_name || c.customer_id || '—')}</div>
+            ${c.customer_id && c.customer_name ? `<div class="font-mono text-[10px] text-slate-500">ID: ${escapeHtml(c.customer_id)}</div>` : ''}
           </td>
           <td class="py-3 px-4 text-center font-mono text-slate-300">${c.total_orders}</td>
-          <td class="py-3 px-4 text-right font-mono font-bold text-emerald-400">₹${parseFloat(c.total_spent).toLocaleString()}</td>
-          <td class="py-3 px-4 text-center font-mono text-slate-400">${c.last_order_date ? new Date(c.last_order_date).toLocaleDateString('en-IN') : '—'}</td>
+          <td class="py-3 px-4 text-right font-mono font-bold text-emerald-400">₹${parseFloat(c.total_spent || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td class="py-3 px-4 text-center font-mono text-slate-400">
+            <div>${c.last_order_date ? new Date(c.last_order_date).toLocaleDateString('en-IN') : '—'}</div>
+            ${c.days_ago !== null && c.days_ago !== undefined ? `<div class="text-[10px] text-slate-500">${c.days_ago}d ago</div>` : ''}
+          </td>
           <td class="py-3 px-4"><span class="badge-seg seg-${c.segment}">${c.segment}</span></td>
-          <td class="py-3 px-4 text-slate-400 max-w-xs text-[11px] leading-relaxed">${c.justification}</td>
+          <td class="py-3 px-4 text-slate-400 max-w-xs text-[11px] leading-relaxed">${escapeHtml(c.justification)}</td>
         </tr>
       `).join('');
     }
@@ -1540,6 +1733,29 @@
       loadExplorer(currentExplorerPage + delta);
     }
 
+    async function exportCsv() {
+      try {
+        const res = await apiFetch('/api/transactions/export');
+        if (!res || !res.ok) {
+          toast('Failed to download CSV export.', 'error');
+          return;
+        }
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `dataset_export_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+        toast('Dataset exported successfully!', 'success');
+      } catch (err) {
+        toast(`Export error: ${err.message}`, 'error');
+      }
+    }
+
     // ──────────────────────────────────────────────────────────
     // UPLOAD DATA MODAL WORKFLOW (Preview & Confirmation)
     // ──────────────────────────────────────────────────────────
@@ -1606,11 +1822,34 @@
       document.getElementById('preview-file-name').textContent = data.fileName;
       document.getElementById('preview-row-count').textContent = `${data.totalRows.toLocaleString()} rows`;
 
-      // Standard Target Fields
+      // Set financial interpretation controls from suggested mappings
+      if (document.getElementById('map-select-price_type')) {
+        document.getElementById('map-select-price_type').value = (data.suggestedMapping && data.suggestedMapping.price_type) || 'unit_price';
+      }
+      if (document.getElementById('map-select-discount_type')) {
+        document.getElementById('map-select-discount_type').value = (data.suggestedMapping && data.suggestedMapping.discount_type) || 'percentage';
+      }
+
+      // Display data quality audit warnings if detected
+      const qualityAlert = document.getElementById('upload-quality-warnings');
+      const qualityList = document.getElementById('upload-quality-warnings-list');
+      if (qualityAlert && qualityList) {
+        if (data.qualityAudit && data.qualityAudit.warnings && data.qualityAudit.warnings.length > 0) {
+          qualityAlert.classList.remove('hidden');
+          qualityList.innerHTML = data.qualityAudit.warnings.map(w => `<li>${escapeHtml(w)}</li>`).join('');
+        } else {
+          qualityAlert.classList.add('hidden');
+          qualityList.innerHTML = '';
+        }
+      }
+
+      // Standard Target Fields (including Order ID and Product ID)
       const targetFields = [
+        { key: 'order_id', label: 'Order ID / Invoice #', desc: 'Distinct order group ID' },
         { key: 'customer_id', label: 'Customer ID', desc: 'Exact ID from file' },
         { key: 'customer_name', label: 'Customer Name', desc: 'Exact name from file' },
-        { key: 'product', label: 'Product Name / SKU', desc: 'Item name or code' },
+        { key: 'product_id', label: 'Product ID / SKU', desc: 'Item identifier / code' },
+        { key: 'product', label: 'Product Name', desc: 'Item descriptive name' },
         { key: 'category', label: 'Product Category', desc: 'Category or department' },
         { key: 'price', label: 'Price / Amount (₹)', desc: 'Unit price or total rate' },
         { key: 'quantity', label: 'Quantity', desc: 'Units purchased' },
@@ -1642,10 +1881,10 @@
       const thead = document.getElementById('preview-table-thead');
       const tbody = document.getElementById('preview-table-tbody');
 
-      thead.innerHTML = `<tr>${data.headers.map(h => `<th class="py-2 px-3 text-slate-400 capitalize">${h}</th>`).join('')}</tr>`;
+      thead.innerHTML = `<tr>${data.headers.map(h => `<th class="py-2 px-3 text-slate-400 capitalize">${escapeHtml(h)}</th>`).join('')}</tr>`;
       tbody.innerHTML = data.previewRows.map(r => `
         <tr class="hover:bg-slate-800/40">
-          ${data.headers.map(h => `<td class="py-1.5 px-3 text-slate-300">${r[h] || '—'}</td>`).join('')}
+          ${data.headers.map(h => `<td class="py-1.5 px-3 text-slate-300">${escapeHtml(r[h] !== undefined && r[h] !== null ? r[h] : '—')}</td>`).join('')}
         </tr>
       `).join('');
     }
@@ -1657,19 +1896,23 @@
       btn.disabled = true;
       btn.textContent = 'Saving dataset inside transaction…';
 
-      // Read user confirmed mappings
+      // Read user confirmed mappings including order_id, product_id, price_type and discount_type
       const confirmedMapping = {
-        customer_id: document.getElementById('map-select-customer_id').value || null,
-        customer_name: document.getElementById('map-select-customer_name').value || null,
-        product: document.getElementById('map-select-product').value || null,
-        category: document.getElementById('map-select-category').value || null,
-        price: document.getElementById('map-select-price').value || null,
-        quantity: document.getElementById('map-select-quantity').value || null,
-        order_date: document.getElementById('map-select-order_date').value || null,
-        discount: document.getElementById('map-select-discount').value || null,
-        location: document.getElementById('map-select-location').value || null,
-        payment_type: document.getElementById('map-select-payment_type').value || null,
-        status: document.getElementById('map-select-status').value || null,
+        order_id: document.getElementById('map-select-order_id')?.value || null,
+        customer_id: document.getElementById('map-select-customer_id')?.value || null,
+        customer_name: document.getElementById('map-select-customer_name')?.value || null,
+        product_id: document.getElementById('map-select-product_id')?.value || null,
+        product: document.getElementById('map-select-product')?.value || null,
+        category: document.getElementById('map-select-category')?.value || null,
+        price: document.getElementById('map-select-price')?.value || null,
+        quantity: document.getElementById('map-select-quantity')?.value || null,
+        order_date: document.getElementById('map-select-order_date')?.value || null,
+        discount: document.getElementById('map-select-discount')?.value || null,
+        location: document.getElementById('map-select-location')?.value || null,
+        payment_type: document.getElementById('map-select-payment_type')?.value || null,
+        status: document.getElementById('map-select-status')?.value || null,
+        price_type: document.getElementById('map-select-price_type')?.value || 'unit_price',
+        discount_type: document.getElementById('map-select-discount_type')?.value || 'percentage',
       };
 
       try {

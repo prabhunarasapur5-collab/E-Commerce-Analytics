@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node server.js",
     "setup": "node setup-db.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
