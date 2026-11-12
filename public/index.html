@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>E-Commerce Sales & Customer Analytics System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js CDN -->
@@ -83,13 +86,16 @@
       width: 6px;
       height: 6px;
     }
+
     .custom-scroll::-webkit-scrollbar-track {
       background: transparent;
     }
+
     .custom-scroll::-webkit-scrollbar-thumb {
       background: rgba(148, 163, 184, 0.2);
       border-radius: 9999px;
     }
+
     .custom-scroll::-webkit-scrollbar-thumb:hover {
       background: rgba(148, 163, 184, 0.4);
     }
@@ -106,10 +112,12 @@
       color: var(--text-secondary);
       transition: all 0.15s ease;
     }
+
     .nav-btn:hover {
       background: var(--hover-bg);
       color: var(--text-primary);
     }
+
     .nav-btn.active {
       background: var(--nav-active);
       color: #6366f1;
@@ -125,10 +133,30 @@
       align-items: center;
       gap: 0.25rem;
     }
-    .seg-High-Value { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
-    .seg-Frequent { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .seg-Occasional { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .seg-Inactive { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .seg-High-Value {
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    .seg-Frequent {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .seg-Occasional {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .seg-Inactive {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
 
     .spinner {
       border: 2px solid rgba(255, 255, 255, 0.2);
@@ -136,23 +164,29 @@
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
+
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
   </style>
 </head>
+
 <body class="dark overflow-x-hidden">
 
   <!-- ============================================================ -->
   <!-- 1. AUTH SCREEN (Shown ONLY when unauthenticated)             -->
   <!-- ============================================================ -->
-  <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xl">
+  <div id="auth-screen"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xl">
     <div class="glass w-full max-w-md rounded-3xl p-8 shadow-2xl relative border border-slate-700/50">
-      
+
       <!-- Logo Header -->
       <div class="text-center mb-8">
-        <div class="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center text-2xl mb-3 shadow-lg shadow-brand-500/20"
-             style="background: linear-gradient(135deg, #6366f1, #a855f7);">
+        <div
+          class="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center text-2xl mb-3 shadow-lg shadow-brand-500/20"
+          style="background: linear-gradient(135deg, #6366f1, #a855f7);">
           ⚡
         </div>
         <h1 class="text-2xl font-extrabold tracking-tight grad-text">EcomAnalytics</h1>
@@ -161,10 +195,13 @@
 
       <!-- Auth Tabs -->
       <div class="flex border-b border-slate-700/60 mb-6 text-sm font-semibold">
-        <button id="tab-login" class="flex-1 pb-3 border-b-2 border-brand-500 text-brand-400 transition-colors" onclick="switchAuthTab('login')">
+        <button id="tab-login" class="flex-1 pb-3 border-b-2 border-brand-500 text-brand-400 transition-colors"
+          onclick="switchAuthTab('login')">
           Sign In
         </button>
-        <button id="tab-signup" class="flex-1 pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-colors" onclick="switchAuthTab('signup')">
+        <button id="tab-signup"
+          class="flex-1 pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-colors"
+          onclick="switchAuthTab('signup')">
           Create Account
         </button>
       </div>
@@ -172,18 +209,19 @@
       <!-- Login Form -->
       <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email
+            Address</label>
           <input id="login-email" type="email" required placeholder="admin@ecomanalytics.io"
-                 class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
+            class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
           <input id="login-password" type="password" required placeholder="••••••••"
-                 class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
+            class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
         </div>
         <button id="btn-login-submit" type="submit"
-                class="w-full py-3 rounded-xl font-bold text-white text-sm tracking-wide shadow-lg shadow-brand-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
+          class="w-full py-3 rounded-xl font-bold text-white text-sm tracking-wide shadow-lg shadow-brand-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
           Sign In to Dashboard
         </button>
       </form>
@@ -193,32 +231,37 @@
         <div>
           <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Username</label>
           <input id="signup-username" type="text" required placeholder="analyst_user" minlength="3"
-                 class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
+            class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email
+            Address</label>
           <input id="signup-email" type="email" required placeholder="user@company.com"
-                 class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
+            class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password (Min. 6 chars)</label>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password (Min. 6
+            chars)</label>
           <input id="signup-password" type="password" required placeholder="••••••••" minlength="6"
-                 class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
+            class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
         </div>
         <button id="btn-signup-submit" type="submit"
-                class="w-full py-3 rounded-xl font-bold text-white text-sm tracking-wide shadow-lg shadow-brand-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                style="background: linear-gradient(135deg, #7c3aed, #4f46e5)">
+          class="w-full py-3 rounded-xl font-bold text-white text-sm tracking-wide shadow-lg shadow-brand-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          style="background: linear-gradient(135deg, #7c3aed, #4f46e5)">
           Create Account
         </button>
       </form>
 
       <!-- Auth Error Toast -->
-      <div id="auth-error-box" class="hidden mt-4 p-3 rounded-xl bg-red-950/60 border border-red-800 text-red-300 text-xs text-center font-medium"></div>
+      <div id="auth-error-box"
+        class="hidden mt-4 p-3 rounded-xl bg-red-950/60 border border-red-800 text-red-300 text-xs text-center font-medium">
+      </div>
 
       <!-- Quick Demo Info -->
       <div class="mt-6 pt-4 border-t border-slate-800 text-center">
         <p class="text-xs text-slate-500">
-          Admin Demo Account: <span class="text-slate-300 font-mono">admin@ecomanalytics.io</span> / <span class="text-slate-300 font-mono">Admin@123</span>
+          Admin Demo Account: <span class="text-slate-300 font-mono">admin@ecomanalytics.io</span> / <span
+            class="text-slate-300 font-mono">Admin@123</span>
         </p>
       </div>
     </div>
@@ -230,34 +273,42 @@
   <div id="app-root" class="hidden min-h-screen flex flex-col">
 
     <!-- Mobile Header Bar -->
-    <header class="md:hidden glass border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+    <header
+      class="md:hidden glass border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
       <div class="flex items-center gap-2">
         <button onclick="toggleMobileSidebar()" class="p-2 rounded-lg bg-slate-800/60 text-slate-300">
-          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
         </button>
         <span class="font-bold text-base grad-text">EcomAnalytics</span>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="openUploadModal()" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-brand-600 flex items-center gap-1">
+        <button onclick="openUploadModal()"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-brand-600 flex items-center gap-1">
           <span>📤</span> Upload
         </button>
         <button onclick="handleLogout()" class="p-2 rounded-lg text-slate-400 hover:text-red-400">
-          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
         </button>
       </div>
     </header>
 
     <div class="flex flex-1">
-      
+
       <!-- ============================================================ -->
       <!-- LEFT SIDEBAR (Exactly 3 Sections)                           -->
       <!-- ============================================================ -->
-      <aside id="sidebar" class="w-64 glass border-r border-slate-800/80 flex flex-col fixed md:sticky top-0 h-screen z-40 transition-transform -translate-x-full md:translate-x-0">
-        
+      <aside id="sidebar"
+        class="w-64 glass border-r border-slate-800/80 flex flex-col fixed md:sticky top-0 h-screen z-40 transition-transform -translate-x-full md:translate-x-0">
+
         <!-- Brand Header -->
         <div class="p-6 border-b border-slate-800/60 flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-md shadow-brand-500/20"
-               style="background: linear-gradient(135deg, #6366f1, #a855f7);">
+            style="background: linear-gradient(135deg, #6366f1, #a855f7);">
             ⚡
           </div>
           <div>
@@ -269,19 +320,27 @@
         <!-- EXACTLY THREE SECTIONS IN SIDEBAR -->
         <nav class="flex-1 p-4 space-y-1.5">
           <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 mb-2">Analytics Modules</p>
-          
+
           <button id="nav-summary" class="nav-btn active" onclick="switchSection('summary')">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.2l5.7-5.7 4.3 4.3 8-8M21 7v6m0-6h-6"/></svg>
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.2l5.7-5.7 4.3 4.3 8-8M21 7v6m0-6h-6" />
+            </svg>
             <span>Executive Summary</span>
           </button>
 
           <button id="nav-customers" class="nav-btn" onclick="switchSection('customers')">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
             <span>Customer Segments</span>
           </button>
 
           <button id="nav-explorer" class="nav-btn" onclick="switchSection('explorer')">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7zm0 5h16M9 4v16"/></svg>
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7zm0 5h16M9 4v16" />
+            </svg>
             <span>Data Explorer</span>
           </button>
         </nav>
@@ -289,7 +348,8 @@
         <!-- User Profile Card -->
         <div class="p-4 border-t border-slate-800/80">
           <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-900/40 border border-slate-800">
-            <div id="user-avatar" class="w-8 h-8 rounded-lg bg-brand-600/30 text-brand-300 font-bold flex items-center justify-center text-sm border border-brand-500/30">
+            <div id="user-avatar"
+              class="w-8 h-8 rounded-lg bg-brand-600/30 text-brand-300 font-bold flex items-center justify-center text-sm border border-brand-500/30">
               U
             </div>
             <div class="flex-1 min-w-0">
@@ -301,7 +361,8 @@
       </aside>
 
       <!-- Sidebar Backdrop on Mobile -->
-      <div id="sidebar-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-950/60 z-30 hidden md:hidden"></div>
+      <div id="sidebar-backdrop" onclick="toggleMobileSidebar()"
+        class="fixed inset-0 bg-slate-950/60 z-30 hidden md:hidden"></div>
 
       <!-- ============================================================ -->
       <!-- MAIN VIEW AREA                                               -->
@@ -309,31 +370,37 @@
       <div class="flex-1 flex flex-col min-w-0">
 
         <!-- Header Bar -->
-        <header class="glass border-b border-slate-800/80 px-6 py-3.5 sticky top-0 z-20 flex items-center justify-between gap-4">
-          
+        <header
+          class="glass border-b border-slate-800/80 px-6 py-3.5 sticky top-0 z-20 flex items-center justify-between gap-4">
+
           <!-- Active Title & Breadcrumb -->
           <div>
             <h2 id="header-section-title" class="text-base font-bold text-slate-100 flex items-center gap-2">
               Executive Summary
             </h2>
-            <p id="header-section-subtitle" class="text-xs text-slate-500">Real-time performance from your active dataset</p>
+            <p id="header-section-subtitle" class="text-xs text-slate-500">Real-time performance from your active
+              dataset</p>
           </div>
 
           <!-- Actions Bar in Header -->
           <div class="flex items-center gap-3">
-            
+
             <!-- Uploaded Files Dropdown Selector -->
             <div class="relative">
               <button id="btn-datasets-menu" onclick="toggleDatasetsDropdown()"
-                      class="px-3 py-1.5 rounded-xl text-xs font-semibold glass border border-slate-700/60 hover:border-slate-500 text-slate-200 flex items-center gap-2 transition-colors">
+                class="px-3 py-1.5 rounded-xl text-xs font-semibold glass border border-slate-700/60 hover:border-slate-500 text-slate-200 flex items-center gap-2 transition-colors">
                 <span class="text-brand-400">📁</span>
                 <span id="active-file-label" class="max-w-[140px] truncate">No Dataset</span>
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
 
               <!-- Dropdown Menu -->
-              <div id="datasets-dropdown" class="hidden absolute right-0 mt-2 w-72 glass rounded-2xl shadow-2xl p-2 border border-slate-700/70 z-50 text-xs">
-                <div class="px-3 py-2 font-bold text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800 flex justify-between items-center">
+              <div id="datasets-dropdown"
+                class="hidden absolute right-0 mt-2 w-72 glass rounded-2xl shadow-2xl p-2 border border-slate-700/70 z-50 text-xs">
+                <div
+                  class="px-3 py-2 font-bold text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800 flex justify-between items-center">
                   <span>Uploaded Datasets</span>
                   <span id="dataset-total-count" class="text-slate-500 font-mono">0</span>
                 </div>
@@ -341,7 +408,8 @@
                   <!-- Populated via JS -->
                 </div>
                 <div class="pt-2 border-t border-slate-800">
-                  <button onclick="openUploadModal(); toggleDatasetsDropdown();" class="w-full py-1.5 rounded-lg text-center font-bold text-brand-400 hover:bg-brand-500/10 transition-colors flex items-center justify-center gap-1.5">
+                  <button onclick="openUploadModal(); toggleDatasetsDropdown();"
+                    class="w-full py-1.5 rounded-lg text-center font-bold text-brand-400 hover:bg-brand-500/10 transition-colors flex items-center justify-center gap-1.5">
                     <span>➕</span> Upload New File
                   </button>
                 </div>
@@ -350,28 +418,32 @@
 
             <!-- Upload Data Button in Header -->
             <button onclick="openUploadModal()"
-                    class="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-md shadow-brand-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
-                    style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
+              class="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-md shadow-brand-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
+              style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
               <span>📤</span>
               <span>Upload Data</span>
             </button>
 
             <!-- Dark / Light Theme Toggle -->
             <button onclick="toggleTheme()" title="Toggle Dark/Light Mode"
-                    class="p-2 rounded-xl glass border border-slate-700/60 text-slate-400 hover:text-white transition-colors">
+              class="p-2 rounded-xl glass border border-slate-700/60 text-slate-400 hover:text-white transition-colors">
               <span id="theme-icon">🌙</span>
             </button>
 
             <!-- Logout Button in Header -->
             <button onclick="handleLogout()" title="Logout"
-                    class="p-2 rounded-xl glass border border-slate-700/60 text-slate-400 hover:text-red-400 hover:border-red-800/40 transition-colors">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+              class="p-2 rounded-xl glass border border-slate-700/60 text-slate-400 hover:text-red-400 hover:border-red-800/40 transition-colors">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
             </button>
           </div>
         </header>
 
         <!-- Active Dataset Info Banner (Shown at top of every section) -->
-        <div id="active-dataset-banner" class="hidden px-6 py-2.5 bg-slate-900/40 border-b border-slate-800/60 text-xs flex items-center justify-between flex-wrap gap-2">
+        <div id="active-dataset-banner"
+          class="hidden px-6 py-2.5 bg-slate-900/40 border-b border-slate-800/60 text-xs flex items-center justify-between flex-wrap gap-2">
           <div class="flex items-center gap-2">
             <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span class="text-slate-400">Active Dataset:</span>
@@ -390,7 +462,8 @@
         <main class="flex-1 p-6 relative">
 
           <!-- Global Loading Indicator -->
-          <div id="global-loading" class="hidden absolute inset-0 bg-slate-950/40 backdrop-blur-sm z-30 flex items-center justify-center">
+          <div id="global-loading"
+            class="hidden absolute inset-0 bg-slate-950/40 backdrop-blur-sm z-30 flex items-center justify-center">
             <div class="glass p-6 rounded-2xl flex items-center gap-3 border border-slate-700">
               <div class="spinner w-5 h-5"></div>
               <span class="text-xs font-semibold text-slate-200">Loading dataset analytics…</span>
@@ -401,17 +474,22 @@
           <!-- SECTION 1: EXECUTIVE SUMMARY                                 -->
           <!-- ============================================================ -->
           <section id="sec-summary" class="space-y-6">
-            
+
             <!-- Clean Empty State (When no dataset active) -->
-            <div id="empty-state-summary" class="glass rounded-3xl p-16 text-center flex flex-col items-center justify-center border border-slate-800">
-              <div class="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-4 bg-brand-500/10 border border-brand-500/20">
+            <div id="empty-state-summary"
+              class="glass rounded-3xl p-16 text-center flex flex-col items-center justify-center border border-slate-800">
+              <div
+                class="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-4 bg-brand-500/10 border border-brand-500/20">
                 📊
               </div>
               <h3 class="text-xl font-bold text-white mb-2">No data yet. Upload a CSV or JSON file to get started</h3>
               <p class="text-xs text-slate-400 max-w-md mb-6 leading-relaxed">
-                Upload your transaction records to immediately view live KPI numbers, revenue trends, category shares, and location breakdowns.
+                Upload your transaction records to immediately view live KPI numbers, revenue trends, category shares,
+                and location breakdowns.
               </p>
-              <button onclick="openUploadModal()" class="px-6 py-2.5 rounded-xl font-bold text-xs text-white shadow-lg shadow-brand-500/25 hover:scale-105 transition-all" style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
+              <button onclick="openUploadModal()"
+                class="px-6 py-2.5 rounded-xl font-bold text-xs text-white shadow-lg shadow-brand-500/25 hover:scale-105 transition-all"
+                style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
                 Upload File
               </button>
             </div>
@@ -424,7 +502,8 @@
               </div>
 
               <!-- Column guidance alert if needed -->
-              <div id="summary-column-notes" class="hidden p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2">
+              <div id="summary-column-notes"
+                class="hidden p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2">
                 <span>💡</span>
                 <span id="summary-column-notes-text"></span>
               </div>
@@ -504,32 +583,40 @@
           <!-- SECTION 2: CUSTOMER SEGMENTS                                 -->
           <!-- ============================================================ -->
           <section id="sec-customers" class="space-y-6 hidden">
-            
+
             <!-- Clean Empty State (When no dataset active) -->
-            <div id="empty-state-customers" class="glass rounded-3xl p-16 text-center flex flex-col items-center justify-center border border-slate-800">
-              <div class="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-4 bg-purple-500/10 border border-purple-500/20">
+            <div id="empty-state-customers"
+              class="glass rounded-3xl p-16 text-center flex flex-col items-center justify-center border border-slate-800">
+              <div
+                class="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-4 bg-purple-500/10 border border-purple-500/20">
                 👥
               </div>
               <h3 class="text-xl font-bold text-white mb-2">No data yet. Upload a CSV or JSON file to get started</h3>
               <p class="text-xs text-slate-400 max-w-md mb-6 leading-relaxed">
-                Customer segments and lifetime metrics will be calculated automatically using the customer values from your uploaded file.
+                Customer segments and lifetime metrics will be calculated automatically using the customer values from
+                your uploaded file.
               </p>
-              <button onclick="openUploadModal()" class="px-6 py-2.5 rounded-xl font-bold text-xs text-white shadow-lg shadow-brand-500/25 hover:scale-105 transition-all" style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
+              <button onclick="openUploadModal()"
+                class="px-6 py-2.5 rounded-xl font-bold text-xs text-white shadow-lg shadow-brand-500/25 hover:scale-105 transition-all"
+                style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
                 Upload File
               </button>
             </div>
 
             <!-- Content Container -->
             <div id="content-customers" class="space-y-6 hidden">
-              
+
               <!-- If file has no customer column -->
-              <div id="no-customer-col-alert" class="hidden glass rounded-2xl p-8 text-center border border-amber-500/30">
+              <div id="no-customer-col-alert"
+                class="hidden glass rounded-2xl p-8 text-center border border-amber-500/30">
                 <div class="text-3xl mb-2">⚠️</div>
                 <h4 class="font-bold text-sm text-white mb-1">No Customer Column Detected</h4>
                 <p id="no-customer-col-msg" class="text-xs text-slate-400 max-w-md mx-auto mb-4">
-                  Customer segmentation needs customer data. Please upload a file containing a Customer ID or Customer Name column.
+                  Customer segmentation needs customer data. Please upload a file containing a Customer ID or Customer
+                  Name column.
                 </p>
-                <button onclick="openUploadModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-600">
+                <button onclick="openUploadModal()"
+                  class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-600">
                   Upload Matching Dataset
                 </button>
               </div>
@@ -541,36 +628,45 @@
                 </div>
 
                 <!-- Reference Date Control Bar (Part 4) -->
-                <div class="glass rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-between border border-slate-800 text-xs">
+                <div
+                  class="glass rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-between border border-slate-800 text-xs">
                   <div class="flex items-center gap-2">
-                    <span class="text-slate-400 font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <span
+                      class="text-slate-400 font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                       <span>📅</span> Reference Date:
                     </span>
                     <select id="customer-ref-date-mode" onchange="onCustomerRefDateModeChanged()"
-                            class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-brand-300 font-mono focus:outline-none focus:border-brand-500">
+                      class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-brand-300 font-mono focus:outline-none focus:border-brand-500">
                       <option value="latest">Latest Dataset Date (Recommended for Historical Data)</option>
                       <option value="current">Current System Date (Today)</option>
                       <option value="custom">Custom Reference Date…</option>
                     </select>
                     <input id="customer-custom-date-input" type="date" onchange="loadCustomers()"
-                           class="hidden bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-brand-500" />
+                      class="hidden bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-brand-500" />
                   </div>
                   <div class="flex items-center gap-2">
-                    <span id="customer-active-ref-date-display" class="font-mono text-[11px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
+                    <span id="customer-active-ref-date-display"
+                      class="font-mono text-[11px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
                       Calculating reference date…
                     </span>
                   </div>
                 </div>
 
                 <!-- Customer Search & Filter Bar -->
-                <div class="glass rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-between border border-slate-800">
+                <div
+                  class="glass rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-between border border-slate-800">
                   <div class="relative flex-1 min-w-[200px]">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
-                    <input id="customer-search-input" type="text" placeholder="Search customer ID or name…" oninput="filterCustomerTable()"
-                           class="w-full bg-slate-900/60 border border-slate-700/70 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" width="14" height="14"
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <circle cx="11" cy="11" r="8" />
+                      <path stroke-linecap="round" d="M21 21l-4.35-4.35" />
+                    </svg>
+                    <input id="customer-search-input" type="text" placeholder="Search customer ID or name…"
+                      oninput="filterCustomerTable()"
+                      class="w-full bg-slate-900/60 border border-slate-700/70 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
                   </div>
                   <select id="customer-segment-filter" onchange="filterCustomerTable()"
-                          class="bg-slate-900/60 border border-slate-700/70 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition-colors">
+                    class="bg-slate-900/60 border border-slate-700/70 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition-colors">
                     <option value="">All Segments</option>
                     <option value="High-Value">High-Value</option>
                     <option value="Frequent">Frequent</option>
@@ -584,7 +680,8 @@
                 <div class="glass rounded-2xl overflow-hidden border border-slate-800">
                   <div class="overflow-x-auto max-h-[540px] custom-scroll">
                     <table class="w-full text-left text-xs">
-                      <thead class="bg-slate-900/80 sticky top-0 border-b border-slate-800 text-slate-400 font-semibold z-10">
+                      <thead
+                        class="bg-slate-900/80 sticky top-0 border-b border-slate-800 text-slate-400 font-semibold z-10">
                         <tr>
                           <th class="py-3 px-4">Rank</th>
                           <th class="py-3 px-4">Customer ID / Name</th>
@@ -607,36 +704,46 @@
           <!-- SECTION 3: DATA EXPLORER                                     -->
           <!-- ============================================================ -->
           <section id="sec-explorer" class="space-y-6 hidden">
-            
+
             <!-- Clean Empty State (When no dataset active) -->
-            <div id="empty-state-explorer" class="glass rounded-3xl p-16 text-center flex flex-col items-center justify-center border border-slate-800">
-              <div class="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-4 bg-emerald-500/10 border border-emerald-500/20">
+            <div id="empty-state-explorer"
+              class="glass rounded-3xl p-16 text-center flex flex-col items-center justify-center border border-slate-800">
+              <div
+                class="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-4 bg-emerald-500/10 border border-emerald-500/20">
                 📋
               </div>
               <h3 class="text-xl font-bold text-white mb-2">No data yet. Upload a CSV or JSON file to get started</h3>
               <p class="text-xs text-slate-400 max-w-md mb-6 leading-relaxed">
                 Inspect, search, sort, and export exact original records directly from your active dataset.
               </p>
-              <button onclick="openUploadModal()" class="px-6 py-2.5 rounded-xl font-bold text-xs text-white shadow-lg shadow-brand-500/25 hover:scale-105 transition-all" style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
+              <button onclick="openUploadModal()"
+                class="px-6 py-2.5 rounded-xl font-bold text-xs text-white shadow-lg shadow-brand-500/25 hover:scale-105 transition-all"
+                style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
                 Upload File
               </button>
             </div>
 
             <!-- Content Container -->
             <div id="content-explorer" class="space-y-4 hidden">
-              
+
               <!-- Filter & Export Controls -->
-              <div class="glass rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-between border border-slate-800">
+              <div
+                class="glass rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-between border border-slate-800">
                 <div class="relative flex-1 min-w-[220px]">
-                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
-                  <input id="explorer-search" type="text" placeholder="Search across all fields…" oninput="debounceExplorerSearch()"
-                         class="w-full bg-slate-900/60 border border-slate-700/70 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" width="14" height="14"
+                    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="8" />
+                    <path stroke-linecap="round" d="M21 21l-4.35-4.35" />
+                  </svg>
+                  <input id="explorer-search" type="text" placeholder="Search across all fields…"
+                    oninput="debounceExplorerSearch()"
+                    class="w-full bg-slate-900/60 border border-slate-700/70 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors" />
                 </div>
-                
+
                 <div class="flex items-center gap-2">
                   <span id="explorer-row-stats" class="text-xs text-slate-400 font-mono"></span>
                   <button onclick="exportCsv()"
-                     class="px-3.5 py-2 rounded-xl text-xs font-semibold glass border border-slate-700/80 hover:border-slate-500 text-slate-200 flex items-center gap-1.5 transition-colors">
+                    class="px-3.5 py-2 rounded-xl text-xs font-semibold glass border border-slate-700/80 hover:border-slate-500 text-slate-200 flex items-center gap-1.5 transition-colors">
                     <span>📥</span> Export CSV
                   </button>
                 </div>
@@ -646,7 +753,8 @@
               <div class="glass rounded-2xl overflow-hidden border border-slate-800">
                 <div class="overflow-x-auto max-h-[580px] custom-scroll">
                   <table class="w-full text-left text-xs whitespace-nowrap">
-                    <thead id="explorer-thead" class="bg-slate-900/90 sticky top-0 border-b border-slate-800 text-slate-400 font-semibold z-10">
+                    <thead id="explorer-thead"
+                      class="bg-slate-900/90 sticky top-0 border-b border-slate-800 text-slate-400 font-semibold z-10">
                       <!-- Dynamically populated with the file's own original column headers -->
                     </thead>
                     <tbody id="explorer-tbody" class="divide-y divide-slate-800/60 font-mono text-[11px]"></tbody>
@@ -658,11 +766,11 @@
                   <span id="explorer-page-info">Page 1 of 1</span>
                   <div class="flex items-center gap-2">
                     <button id="explorer-btn-prev" onclick="changeExplorerPage(-1)" disabled
-                            class="px-3 py-1 rounded-lg glass border border-slate-800 disabled:opacity-30 disabled:cursor-not-allowed hover:text-white transition-colors">
+                      class="px-3 py-1 rounded-lg glass border border-slate-800 disabled:opacity-30 disabled:cursor-not-allowed hover:text-white transition-colors">
                       ← Prev
                     </button>
                     <button id="explorer-btn-next" onclick="changeExplorerPage(1)" disabled
-                            class="px-3 py-1 rounded-lg glass border border-slate-800 disabled:opacity-30 disabled:cursor-not-allowed hover:text-white transition-colors">
+                      class="px-3 py-1 rounded-lg glass border border-slate-800 disabled:opacity-30 disabled:cursor-not-allowed hover:text-white transition-colors">
                       Next →
                     </button>
                   </div>
@@ -679,19 +787,25 @@
   <!-- ============================================================ -->
   <!-- 3. UPLOAD DATA MODAL (CSV & JSON with Preview & Mapping)      -->
   <!-- ============================================================ -->
-  <div id="upload-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
-    <div class="glass w-full max-w-3xl rounded-3xl p-6 shadow-2xl relative border border-slate-700/80 max-h-[90vh] flex flex-col">
-      
+  <div id="upload-modal"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
+    <div
+      class="glass w-full max-w-3xl rounded-3xl p-6 shadow-2xl relative border border-slate-700/80 max-h-[90vh] flex flex-col">
+
       <!-- Modal Header -->
       <div class="flex items-center justify-between pb-4 border-b border-slate-800">
         <div>
           <h3 class="font-bold text-base text-white flex items-center gap-2">
             <span>📤</span> Upload Dataset (CSV & JSON)
           </h3>
-          <p class="text-xs text-slate-400 mt-0.5">Parse, preview, and map fields before saving into your isolated dataset</p>
+          <p class="text-xs text-slate-400 mt-0.5">Parse, preview, and map fields before saving into your isolated
+            dataset</p>
         </div>
-        <button onclick="closeUploadModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">
-          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        <button onclick="closeUploadModal()"
+          class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </div>
 
@@ -701,20 +815,23 @@
         <!-- STEP 1: File Selection -->
         <div id="upload-step-select">
           <div id="drop-area" onclick="document.getElementById('file-input').click()"
-               class="border-2 border-dashed border-slate-700 hover:border-brand-500 rounded-2xl p-10 text-center cursor-pointer transition-all bg-slate-900/40 hover:bg-brand-950/20">
+            class="border-2 border-dashed border-slate-700 hover:border-brand-500 rounded-2xl p-10 text-center cursor-pointer transition-all bg-slate-900/40 hover:bg-brand-950/20">
             <input type="file" id="file-input" accept=".csv,.json" class="hidden" onchange="onFileChosen(event)">
-            <div class="w-14 h-14 mx-auto rounded-2xl bg-brand-500/10 flex items-center justify-center text-3xl mb-3 border border-brand-500/20">
+            <div
+              class="w-14 h-14 mx-auto rounded-2xl bg-brand-500/10 flex items-center justify-center text-3xl mb-3 border border-brand-500/20">
               📁
             </div>
             <p class="text-sm font-bold text-slate-200">Click to select, or drag and drop a file here</p>
-            <p class="text-xs text-slate-500 mt-1">Supports <span class="text-brand-400 font-mono">.CSV</span> and <span class="text-brand-400 font-mono">.JSON</span> (Max 10 MB)</p>
+            <p class="text-xs text-slate-500 mt-1">Supports <span class="text-brand-400 font-mono">.CSV</span> and <span
+                class="text-brand-400 font-mono">.JSON</span> (Max 10 MB)</p>
           </div>
-          <div id="upload-file-error" class="hidden mt-3 p-3 rounded-xl bg-red-950/50 border border-red-800 text-red-300 text-xs"></div>
+          <div id="upload-file-error"
+            class="hidden mt-3 p-3 rounded-xl bg-red-950/50 border border-red-800 text-red-300 text-xs"></div>
         </div>
 
         <!-- STEP 2: Preview & Column Mapping -->
         <div id="upload-step-mapping" class="hidden space-y-5">
-          
+
           <!-- File info summary -->
           <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between text-xs">
             <div>
@@ -729,11 +846,13 @@
           </div>
 
           <!-- Data Quality Warnings Callout -->
-          <div id="upload-quality-warnings" class="hidden p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs">
+          <div id="upload-quality-warnings"
+            class="hidden p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs">
             <div class="font-bold flex items-center gap-1.5 mb-1.5 text-amber-300">
               <span>⚠️</span> Data Quality & Accuracy Audit
             </div>
-            <ul id="upload-quality-warnings-list" class="list-disc list-inside space-y-1 text-[11px] text-amber-300/90"></ul>
+            <ul id="upload-quality-warnings-list" class="list-disc list-inside space-y-1 text-[11px] text-amber-300/90">
+            </ul>
           </div>
 
           <!-- Financial Calculation Interpretation Controls -->
@@ -741,22 +860,48 @@
             <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Financial Calculation Settings</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div>
-                <label class="block font-semibold text-slate-300 mb-1">Price Column Meaning</label>
-                <select id="map-select-price_type" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block font-semibold text-slate-300">Price Column Meaning</label>
+                  <span id="warn-badge-price" class="hidden text-amber-400 font-bold text-[10px]">⚠️ Please Confirm</span>
+                </div>
+                <select id="map-select-price_type"
+                  class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                   <option value="unit_price">Unit Price (Calculates Line Gross = Price × Quantity)</option>
                   <option value="line_total">Line Total (Uploaded Price is already Total Amount)</option>
                 </select>
-                <p class="text-[10px] text-slate-500 mt-1">Specify whether your price column represents single-unit rate or total line value.</p>
+                <p class="text-[10px] text-slate-500 mt-1">Specify whether your price column represents single-unit rate
+                  or total line value.</p>
               </div>
               <div>
-                <label class="block font-semibold text-slate-300 mb-1">Discount Column Format</label>
-                <select id="map-select-discount_type" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block font-semibold text-slate-300">Discount Column Format</label>
+                  <span id="warn-badge-discount" class="hidden text-amber-400 font-bold text-[10px]">⚠️ Please Confirm</span>
+                </div>
+                <select id="map-select-discount_type"
+                  class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                   <option value="percentage">Percentage (%) — Rate from 0 to 100%</option>
                   <option value="fixed_total">Fixed Amount (₹) — Monetary discount per line item</option>
                   <option value="fixed_unit">Fixed Amount per Unit (₹) — Multiplied by Quantity</option>
                 </select>
-                <p class="text-[10px] text-slate-500 mt-1">Converts discounts to actual rupees, avoiding raw percentage summation.</p>
+                <p class="text-[10px] text-slate-500 mt-1">Converts discounts to actual rupees, avoiding raw percentage
+                  summation.</p>
               </div>
+            </div>
+
+            <!-- Status Handling Assumption (Requirement 4) -->
+            <div id="status-handling-container" class="pt-2 border-t border-slate-800 text-xs">
+              <div class="flex items-center justify-between mb-1">
+                <label class="block font-semibold text-slate-300">Missing Status Handling (When Status Column Not Mapped)</label>
+                <span id="warn-badge-status" class="hidden text-amber-400 font-bold text-[10px]">⚠️ Status Column Missing</span>
+              </div>
+              <select id="map-select-status_handling"
+                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                <option value="assume_completed">Assume all records are Completed Sales (Standard paid transactions export)</option>
+                <option value="treat_as_unverified">Treat missing status as Unverified / Pending (Conservative — excludes from revenue until confirmed)</option>
+              </select>
+              <p class="text-[10px] text-slate-400 mt-1">
+                Ensures exports without a dedicated status column do not silently produce zero revenue. Choose 'Assume Completed' if your file contains confirmed purchases.
+              </p>
             </div>
           </div>
 
@@ -776,7 +921,8 @@
             <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">First 10 Rows Preview</h4>
             <div class="overflow-x-auto rounded-xl border border-slate-800 max-h-48 custom-scroll">
               <table class="w-full text-left text-[11px] font-mono whitespace-nowrap">
-                <thead id="preview-table-thead" class="bg-slate-900/90 text-slate-400 border-b border-slate-800 sticky top-0"></thead>
+                <thead id="preview-table-thead"
+                  class="bg-slate-900/90 text-slate-400 border-b border-slate-800 sticky top-0"></thead>
                 <tbody id="preview-table-tbody" class="divide-y divide-slate-800/60"></tbody>
               </table>
             </div>
@@ -788,12 +934,13 @@
 
       <!-- Modal Footer -->
       <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
-        <button onclick="closeUploadModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+        <button onclick="closeUploadModal()"
+          class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors">
           Cancel
         </button>
         <button id="btn-confirm-upload" onclick="submitUploadConfirm()" disabled
-                class="px-6 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-lg shadow-brand-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
-                style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
+          class="px-6 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-lg shadow-brand-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+          style="background: linear-gradient(135deg, #4f46e5, #7c3aed)">
           Confirm & Save Dataset
         </button>
       </div>
@@ -1084,7 +1231,15 @@
       document.getElementById('banner-upload-time').textContent = new Date(ds.uploaded_at).toLocaleString('en-IN');
     }
 
+    let cachedDatasetsList = [];
+
+    function handleDeleteDatasetClick(id) {
+      const ds = cachedDatasetsList.find(x => x.id === id);
+      deleteDataset(id, ds ? ds.file_name : 'this dataset');
+    }
+
     function renderDatasetsDropdown(list) {
+      cachedDatasetsList = list || [];
       const container = document.getElementById('datasets-list');
       if (list.length === 0) {
         container.innerHTML = '<div class="py-4 text-center text-slate-500">No datasets uploaded yet.</div>';
@@ -1096,12 +1251,12 @@
           <div class="flex-1 min-w-0 cursor-pointer pr-2" onclick="selectDataset(${d.id})">
             <p class="font-semibold text-slate-200 truncate flex items-center gap-1.5">
               <span>${d.file_type === 'JSON' ? '📄' : '📊'}</span>
-              <span>${d.file_name}</span>
+              <span>${escapeHtml(d.file_name)}</span>
               ${d.is_active ? '<span class="text-[9px] bg-brand-500/20 text-brand-300 px-1.5 py-0.5 rounded font-bold">ACTIVE</span>' : ''}
             </p>
             <p class="text-[10px] text-slate-500">${d.row_count} rows • ${new Date(d.uploaded_at).toLocaleDateString()}</p>
           </div>
-          <button onclick="deleteDataset(${d.id}, '${d.file_name.replace(/'/g, "\\'")}')" title="Delete Dataset"
+          <button onclick="handleDeleteDatasetClick(${d.id})" title="Delete Dataset"
                   class="p-1 rounded text-slate-500 hover:text-red-400 hover:bg-red-950/30 transition-colors">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
@@ -1192,16 +1347,33 @@
       const container = document.getElementById('summary-kpis');
       const cards = [];
 
-      // 1. Completed Orders / Transactions (Part 1.3 & Part 3.2)
-      const isOrderLevel = !!m.has_order_id;
-      const countVal = isOrderLevel && m.unique_completed_orders !== null ? m.unique_completed_orders : (m.completed_transactions || m.total_orders);
+      // 1. Completed Orders / Transactions (Requirements 2 & 4)
+      const isOrderLevel = !!m.has_order_id && !m.has_partial_order_ids;
+      const isPartial = !!m.has_partial_order_ids;
+      let countLabel = 'Completed Transactions';
+      let countVal = m.completed_transactions || m.total_orders;
+      let countSub = 'Fulfilled line items (No Order ID mapped)';
+      let countBadge = 'Transaction Level';
+
+      if (isOrderLevel) {
+        countLabel = 'Completed Orders';
+        countVal = m.unique_completed_orders;
+        countSub = 'Unique fulfilled orders (excl. returns)';
+        countBadge = 'Verified Orders';
+      } else if (isPartial) {
+        countLabel = 'Completed Orders & Rows';
+        countVal = `${m.unique_completed_orders} orders + ${m.completed_missing_order_id} unassigned`;
+        countSub = `${m.unique_completed_orders} verified orders, ${m.completed_missing_order_id} rows missing Order ID`;
+        countBadge = 'Partial Order IDs';
+      }
+
       cards.push({
-        label: isOrderLevel ? 'Completed Orders' : 'Completed Transactions',
-        value: parseInt(countVal || 0).toLocaleString(),
-        sub: isOrderLevel ? 'Unique fulfilled orders (excl. returns)' : 'Fulfilled line items (No Order ID mapped)',
+        label: countLabel,
+        value: typeof countVal === 'number' ? countVal.toLocaleString() : countVal,
+        sub: countSub,
         icon: '📦',
         color: '#4f46e5',
-        badge: isOrderLevel ? 'Verified Orders' : 'Transaction Level',
+        badge: countBadge,
       });
 
       // 2. Completed Net Sales (Part 1.2 D)
@@ -1235,16 +1407,32 @@
           badge: 'Actual ₹',
         });
 
-        // 5. AOV or ATV (Part 3.3)
-        const isAOV = isOrderLevel && m.average_order_value !== null;
-        const avgVal = isAOV ? m.average_order_value : (m.average_transaction_value || m.avg_order_value || 0);
+        // 5. AOV or ATV (Requirement 2: Never mix incomplete order IDs with verified AOV)
+        const isVerifiedAOV = !!m.has_order_id && !m.has_partial_order_ids && m.average_order_value !== null;
+        let avgLabel = 'Avg Transaction Value';
+        let avgVal = m.average_transaction_value || 0;
+        let avgSub = 'Per transaction line (No Order ID mapped)';
+        let avgBadge = 'Line ATV';
+
+        if (isVerifiedAOV) {
+          avgLabel = 'Average Order Value';
+          avgVal = m.average_order_value;
+          avgSub = 'Net sales / unique completed orders';
+          avgBadge = 'Verified Order AOV';
+        } else if (m.has_partial_order_ids) {
+          avgLabel = 'Avg Transaction Value';
+          avgVal = m.average_transaction_value;
+          avgSub = `Overall ATV (Verified subset AOV: ₹${m.verified_order_aov ? Math.round(m.verified_order_aov).toLocaleString('en-IN') : 'N/A'})`;
+          avgBadge = 'Partial Order IDs';
+        }
+
         cards.push({
-          label: isAOV ? 'Average Order Value' : 'Avg Transaction Value',
+          label: avgLabel,
           value: `₹${parseFloat(avgVal || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
-          sub: isAOV ? 'Net sales / unique completed orders' : 'Per transaction line (No Order ID)',
+          sub: avgSub,
           icon: '📈',
           color: '#8b5cf6',
-          badge: isAOV ? 'Order AOV' : 'Line ATV',
+          badge: avgBadge,
         });
       }
 
@@ -1262,15 +1450,28 @@
         });
       }
 
-      // 7. Return Rate (Part 1.3)
+      // 7. Return Rate (Requirement 3: Distinguish Order Return Rate vs Transaction Return Rate)
       if (fields.hasStatus && m.return_rate !== null) {
+        const isOrderRate = m.return_rate_type === 'order';
         cards.push({
-          label: 'Return Rate',
+          label: isOrderRate ? 'Order Return Rate' : 'Transaction Return Rate',
           value: `${m.return_rate}%`,
-          sub: 'Returned / Fulfilled orders',
+          sub: isOrderRate ? 'Returned orders / Fulfilled orders' : 'Returned lines / Fulfilled transactions',
           icon: '📉',
           color: '#f43f5e',
-          badge: 'Fulfilled %',
+          badge: isOrderRate ? 'Order Level' : 'Transaction Level',
+        });
+      }
+
+      // 8. Missing Status / Unclassified callout (Requirement 4)
+      if (!fields.hasStatus && m.unclassified_transactions > 0) {
+        cards.push({
+          label: 'Status Assumption',
+          value: `${m.unclassified_transactions.toLocaleString()} rows`,
+          sub: m.completed_transactions > 0 ? 'Assumed Completed (Export setting)' : 'Treated as Unverified (Excluded)',
+          icon: 'ℹ️',
+          color: '#06b6d4',
+          badge: m.completed_transactions > 0 ? 'Assumed Completed' : 'Unverified',
         });
       }
 
@@ -1360,7 +1561,7 @@
               },
               tooltip: {
                 callbacks: {
-                  label: function(ctx) {
+                  label: function (ctx) {
                     if (ctx.datasetIndex === 0) {
                       return ` Net Sales: ₹${Number(ctx.raw).toLocaleString('en-IN')}`;
                     }
@@ -1708,7 +1909,7 @@
       thead.innerHTML = `
         <tr>
           ${showRowPosHeader ? '<th class="py-3 px-3 text-slate-500 font-mono">Row # (position)</th>' : ''}
-          ${headers.map(h => `<th class="py-3 px-4 capitalize">${h}</th>`).join('')}
+          ${headers.map(h => `<th class="py-3 px-4 capitalize">${escapeHtml(h)}</th>`).join('')}
         </tr>
       `;
 
@@ -1721,9 +1922,9 @@
         <tr class="hover:bg-slate-800/40">
           ${showRowPosHeader ? `<td class="py-2.5 px-3 text-slate-500 font-bold">${r.row_number}</td>` : ''}
           ${headers.map(h => {
-            const val = r.raw_data[h];
-            const displayVal = (val !== undefined && val !== null && String(val).trim() !== '') ? val : '—';
-            return `<td class="py-2.5 px-4 text-slate-300">${displayVal}</td>`;
+            const rawVal = r.raw_data ? r.raw_data[h] : '';
+            const displayVal = (rawVal !== undefined && rawVal !== null && String(rawVal).trim() !== '') ? String(rawVal) : '—';
+            return `<td class="py-2.5 px-4 text-slate-300">${escapeHtml(displayVal)}</td>`;
           }).join('')}
         </tr>
       `).join('');
@@ -1829,6 +2030,24 @@
       if (document.getElementById('map-select-discount_type')) {
         document.getElementById('map-select-discount_type').value = (data.suggestedMapping && data.suggestedMapping.discount_type) || 'percentage';
       }
+      if (document.getElementById('map-select-status_handling')) {
+        document.getElementById('map-select-status_handling').value = (data.suggestedMapping && data.suggestedMapping.status_handling) || 'assume_completed';
+      }
+
+      // Warning badges for ambiguous fields
+      const priceBadge = document.getElementById('warn-badge-price');
+      if (priceBadge) {
+        priceBadge.classList.toggle('hidden', !(data.suggestedMapping && data.suggestedMapping.price_uncertain));
+      }
+      const discBadge = document.getElementById('warn-badge-discount');
+      if (discBadge) {
+        discBadge.classList.toggle('hidden', !(data.suggestedMapping && data.suggestedMapping.discount_uncertain));
+      }
+      const statusBadge = document.getElementById('warn-badge-status');
+      if (statusBadge) {
+        const isMissingStatus = !(data.suggestedMapping && data.suggestedMapping.status);
+        statusBadge.classList.toggle('hidden', !isMissingStatus);
+      }
 
       // Display data quality audit warnings if detected
       const qualityAlert = document.getElementById('upload-quality-warnings');
@@ -1871,7 +2090,7 @@
             </div>
             <select id="map-select-${tf.key}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
               <option value="">-- Not in file --</option>
-              ${data.headers.map(h => `<option value="${h}" ${h === suggested ? 'selected' : ''}>${h}</option>`).join('')}
+              ${data.headers.map(h => `<option value="${escapeHtml(h)}" ${h === suggested ? 'selected' : ''}>${escapeHtml(h)}</option>`).join('')}
             </select>
           </div>
         `;
@@ -1913,6 +2132,7 @@
         status: document.getElementById('map-select-status')?.value || null,
         price_type: document.getElementById('map-select-price_type')?.value || 'unit_price',
         discount_type: document.getElementById('map-select-discount_type')?.value || 'percentage',
+        status_handling: document.getElementById('map-select-status_handling')?.value || 'treat_as_unverified',
       };
 
       try {
@@ -1973,4 +2193,5 @@
     })();
   </script>
 </body>
+
 </html>

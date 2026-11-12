@@ -345,72 +345,11 @@ async function getActiveDataset(userId) {
 // Normalizers & Parsers
 // ──────────────────────────────────────────────────────────
 function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/).filter(l => l.trim() && !l.trim().startsWith('#'));
-  if (lines.length < 2) {
-    throw new Error('CSV file must have a header row and at least one data row.');
-  }
-
-  function parseLine(line) {
-    const result = [];
-    let inQuote = false, cur = '';
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"' && line[i + 1] === '"') {
-        cur += '"';
-        i++;
-      } else if (ch === '"') {
-        inQuote = !inQuote;
-      } else if (ch === ',' && !inQuote) {
-        result.push(cur.trim());
-        cur = '';
-      } else {
-        cur += ch;
-      }
-    }
-    result.push(cur.trim());
-    return result;
-  }
-
-  const rawHeaders = parseLine(lines[0]).map(h => h.replace(/^["']|["']$/g, '').trim());
-  const rows = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const vals = parseLine(lines[i]).map(v => v.replace(/^["']|["']$/g, '').trim());
-    const obj = {};
-    rawHeaders.forEach((h, idx) => {
-      obj[h] = vals[idx] !== undefined ? vals[idx] : '';
-    });
-    rows.push(obj);
-  }
-
-  return { headers: rawHeaders, rows };
+  return analyticsEngine.parseCSV(text);
 }
 
 function normalizeDate(val) {
-  if (!val) return null;
-  if (val instanceof Date && !isNaN(val.getTime())) {
-    const y = val.getFullYear();
-    const m = String(val.getMonth() + 1).padStart(2, '0');
-    const d = String(val.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }
-  const str = String(val).trim();
-  const isoMatch = str.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
-  if (isoMatch) {
-    return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
-  }
-  const dmyMatch = str.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/);
-  if (dmyMatch) {
-    return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
-  }
-  const dt = new Date(str);
-  if (!isNaN(dt.getTime())) {
-    const y = dt.getFullYear();
-    const m = String(dt.getMonth() + 1).padStart(2, '0');
-    const d = String(dt.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }
-  return null;
+  return analyticsEngine.normalizeDateStr(val);
 }
 
 // Auto-detect common column names
@@ -422,10 +361,10 @@ function autoDetectMapping(headers) {
     product: ['product', 'product_name', 'productname', 'item', 'item_name', 'itemname', 'title', 'product name', 'item name'],
     product_id: ['product_id', 'productid', 'item_id', 'itemid', 'sku', 'prod_id', 'product id', 'item id', 'sku_code', 'article_id'],
     category: ['category', 'cat', 'department', 'type', 'genre', 'product_category', 'category name', 'category_name'],
-    price: ['price', 'unit_price', 'unitprice', 'rate', 'unit_rate', 'amount', 'cost', 'unit price', 'selling_price', 'line_total', 'total_price'],
+    price: ['unit_price', 'unitprice', 'price', 'rate', 'unit_rate', 'amount', 'cost', 'unit price', 'selling_price', 'line_total', 'total_price', 'total_amount'],
     quantity: ['quantity', 'qty', 'count', 'units', 'volume', 'qty_sold', 'quantity sold'],
     order_date: ['order_date', 'date', 'orderdate', 'transaction_date', 'created_at', 'timestamp', 'txn_date', 'order date', 'purchase date', 'invoice_date'],
-    discount: ['discount', 'discount_pct', 'disc', 'discount_amount', 'discount percent', 'discount %', 'markdown'],
+    discount: ['discount_pct', 'discount_percent', 'discount_percentage', 'discount_amount', 'fixed_discount', 'flat_discount', 'discount', 'disc', 'discount percent', 'discount %', 'markdown'],
     location: ['location', 'city', 'state', 'country', 'region', 'address', 'shipping_address', 'shipping_city', 'place'],
     payment_type: ['payment_type', 'payment_method', 'payment', 'pay_type', 'mode', 'payment type', 'payment method', 'payment_mode'],
     status: ['status', 'order_status', 'txn_status', 'state', 'condition', 'order status', 'transaction_status'],
@@ -447,29 +386,80 @@ function autoDetectMapping(headers) {
     }
   }
 
-  // Detect discount type: default percentage if header hints percentage, or fixed if hints amount
+  // Detect discount type:
+  // - discount_pct, discount_percent, discount_percentage -> percentage
+  // - discount_amount, fixed_discount, flat_discount -> fixed_total
+  // - discount_per_unit -> fixed_unit
+  // - ambiguous 'discount' -> percentage (uncertain)
   mapping.discount_type = 'percentage';
+  mapping.discount_uncertain = false;
   if (mapping.discount) {
-    const dLower = mapping.discount.toLowerCase();
+    const dLower = mapping.discount.toLowerCase().trim();
     if (dLower.includes('unit')) {
       mapping.discount_type = 'fixed_unit';
-    } else if (dLower.includes('amt') || dLower.includes('amount') || dLower.includes('val') || dLower.includes('rs') || dLower.includes('inr')) {
+    } else if (
+      dLower === 'discount_amount' ||
+      dLower === 'fixed_discount' ||
+      dLower === 'flat_discount' ||
+      dLower.includes('amt') ||
+      dLower.includes('amount') ||
+      dLower.includes('val') ||
+      dLower.includes('rs') ||
+      dLower.includes('inr')
+    ) {
       mapping.discount_type = 'fixed_total';
+    } else if (
+      dLower === 'discount_pct' ||
+      dLower === 'discount_percent' ||
+      dLower === 'discount_percentage' ||
+      dLower.includes('%') ||
+      dLower.includes('pct') ||
+      dLower.includes('percent')
+    ) {
+      mapping.discount_type = 'percentage';
     } else {
       mapping.discount_type = 'percentage';
+      mapping.discount_uncertain = true;
     }
   }
 
-  // Detect price type: default unit_price unless header specifies line total
+  // Detect price type:
+  // - unit_price, unitprice, rate, price_per_unit -> unit_price (certain)
+  // - line_total, total_price, total_amount, extended_price -> line_total (certain)
+  // - ambiguous 'price' or 'amount' -> unit_price (uncertain)
   mapping.price_type = 'unit_price';
+  mapping.price_uncertain = false;
   if (mapping.price) {
-    const pLower = mapping.price.toLowerCase();
-    if (pLower.includes('line_total') || pLower.includes('linetotal') || pLower.includes('extended') || pLower.includes('total_price')) {
+    const pLower = mapping.price.toLowerCase().trim();
+    if (
+      pLower === 'line_total' ||
+      pLower === 'linetotal' ||
+      pLower === 'total_price' ||
+      pLower === 'total_amount' ||
+      pLower.includes('line_total') ||
+      pLower.includes('linetotal') ||
+      pLower.includes('total_price') ||
+      pLower.includes('extended')
+    ) {
       mapping.price_type = 'line_total';
+    } else if (
+      pLower === 'unit_price' ||
+      pLower === 'unitprice' ||
+      pLower === 'rate' ||
+      pLower.includes('unit_price') ||
+      pLower.includes('unitprice') ||
+      pLower.includes('per_unit')
+    ) {
+      mapping.price_type = 'unit_price';
     } else {
       mapping.price_type = 'unit_price';
+      mapping.price_uncertain = true;
     }
   }
+
+  // Detect missing status
+  mapping.status_missing = !mapping.status;
+  mapping.status_handling = mapping.status ? 'mapped' : 'treat_as_unverified';
 
   return mapping;
 }
@@ -754,9 +744,9 @@ app.post('/api/upload/preview', requireAuth, upload.single('file'), async (req, 
           return res.status(400).json({ error: 'JSON array is empty.' });
         }
 
-        // Collect all distinct keys from first 100 rows
+        // Collect all distinct keys across ALL rows (not just first 100)
         const keySet = new Set();
-        json.slice(0, 100).forEach(item => {
+        json.forEach(item => {
           if (typeof item === 'object' && item !== null) {
             Object.keys(item).forEach(k => keySet.add(k));
           }

@@ -227,19 +227,23 @@ describe('EcomAnalytics Stage 1 Accuracy Suite', () => {
       assert.equal(bob.segment, 'Inactive');
     });
 
-    it('uses latest dataset transaction date as default reference date for recency', () => {
+    it('uses latest completed transaction date as default reference date and does not reset recency on returns', () => {
       const res = engine.computeCustomerMetrics(custRows, mapping, 'latest');
-      assert.equal(res.referenceDate, '2025-04-01'); // max date in dataset
+      // Max completed transaction date in dataset is 2025-03-15 (returned order on 2025-04-01 must not set ref date)
+      assert.equal(res.referenceDate, '2025-03-15');
       const alice = res.customers.find(c => c.customer_id === 'C1');
-      // Alice last order was 2025-04-01 (returned order recorded date) -> 0 days recency
+      // Alice last completed order was 2025-03-15 (returned order on 2025-04-01 did not reset purchase recency)
+      assert.equal(alice.last_order_date, '2025-03-15');
       assert.equal(alice.days_since_last_order, 0);
     });
 
-    it('supports custom reference date', () => {
+    it('supports custom reference date and calculates recency from last completed order', () => {
       const res = engine.computeCustomerMetrics(custRows, mapping, '2025-05-01');
       assert.equal(res.referenceDate, '2025-05-01');
       const alice = res.customers.find(c => c.customer_id === 'C1');
-      assert.equal(alice.days_since_last_order, 30); // 30 days from 2025-04-01 to 2025-05-01
+      assert.equal(alice.last_order_date, '2025-03-15');
+      // 47 days from 2025-03-15 to 2025-05-01 (16 days in March + 30 in April + 1 in May)
+      assert.equal(alice.days_since_last_order, 47);
     });
   });
 
